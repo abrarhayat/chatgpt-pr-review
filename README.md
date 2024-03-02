@@ -28,6 +28,7 @@ An example configuration, note:
 - the action is designed to review pull requests, as such the workflow should be triggered on `pull_request`
 - the OpenAI API key is provided as a GitHub secret, you may need to adjust this configuration to extract the secret you created above
 - the action makes use of the default GitHub token (as discussed above), this token is exposed as a GitHub secret `secrets.GITHUB_TOKEN`
+- The default run of this action will trigger a check list based review but if you wish to change the review type you can do so by setting the secret variable `secrets.REVIEW_TYPE` and can set it to `scalability`
 
 ```yaml
 name: pr-review
@@ -44,4 +45,5 @@ jobs:
           openai_api_key: ${{ secrets.OPENAI_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           github_pr_id: ${{ github.event.number }}
+          review_type: ${{ secrets.REVIEW_TYPE }}
 ```

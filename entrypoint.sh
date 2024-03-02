@@ -7,4 +7,5 @@ python /main.py \
 --openai_model "$5" \
 --openai_temperature "$6" \
 --openai_max_tokens "$7" \
---logging "$8"
+--logging "$8" \
+--review_type "$9"
