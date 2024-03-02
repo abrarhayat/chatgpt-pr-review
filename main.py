@@ -2,7 +2,7 @@ from fnmatch import fnmatch
 from logging import info, basicConfig, getLevelName, debug
 from time import sleep
 import os
-from typing import Iterable, List, Tuple
+from typing import Iterable, List, Tuple, Optional
 from argparse import ArgumentParser
 from re import search
 import openai
@@ -26,7 +26,9 @@ def code_type(filename: str) -> str | None:
                 return "Python"
 
 
-def prompt(filename: str, contents: str, review_type: str = "checklist") -> str:
+def prompt(filename: str, contents: str, review_type: str) -> str:
+    if review_type == '':
+        review_type = "checklist"
     code = "code"
     type = code_type(filename)
     if type:
@@ -68,6 +70,23 @@ def prompt(filename: str, contents: str, review_type: str = "checklist") -> str:
             "if so comment on the scalability\n"
             f"```\n{contents}\n```"
         )
+    elif(review_type == 'performance'):
+        return (
+            f"Please evaluate the {code} below.\n"
+            "Use the following checklist to guide your analysis:\n"
+            "Has the improved changes contribute to performance?\n"
+            "if so comment on the performance\n"
+            f"```\n{contents}\n```"
+        )
+    elif(review_type == 'uml'):
+        return (
+            f"Please evaluate the {code} below.\n"
+                "Use the following checklist to guide your analysis:\n"
+                "Please comment on the structural changes made\n"
+                "If everything is fine, generate PlantUML for the changes, otherwise correct the changes and then generate PlantUML\n"
+                "If the file itself was PlantUML, improve the PlantUML\n"
+            f"```\n{contents}\n```"
+        )      
 
 
 def is_merge_commit(commit: Commit.Commit) -> bool:
@@ -173,10 +192,10 @@ def main():
 
     parser.add_argument(
         "--review_type",
-        default="warning",
+        default='',
         type=str,
         help="review type",
-        choices=["scalability", ""], # Leave empty for default checklist based review
+        choices=["uml", "scalability", "performance", ''], # Leave empty for default checklist based review
     )
     args = parser.parse_args()
 
