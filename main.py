@@ -66,9 +66,9 @@ def prompt(filename: str, contents: str, review_type: str) -> str:
         return (
             f"Please evaluate the {code} below.\n"
             "Use the following checklist to guide your analysis:\n"
-            "Configuration: Intel Xeon 2.4 GHZ, 2 GB Memory, 4 x 60 GB HDD\n"
+            "Configuration: For the following configuration of the server, Intel Xeon 2.4 GHZ, 2 GB Memory, 4 x 60 GB HDD\n"
             "For the given configuration, how does the code change contribute to scalability in the following criteria:\n"
-            "   1. Efficiency improvement of the algorithm\n"
+            "   1. Efficiency of the algorithm\n"
             "       a. Time Complexity\n"
             "       b. Space Complexity\n"
             "       c. Data Structure used\n"
@@ -84,6 +84,7 @@ def prompt(filename: str, contents: str, review_type: str) -> str:
             "       a. How well will can it be debugged or tested\n"
             "       b. How adjustable is the code to creating new integration and regression tests\n"
             "       c. How much more complexity does it add to performing UI automation tests\n"
+            "       d. Generate unit tests at the end of this review\n"
             "Provide your feedback in a numbered list for each category. At the end of your answer, summarize the recommended changes to improve the quality of the code provided.\n"
             f"```\n{contents}\n```"
         )
