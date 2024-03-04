@@ -239,13 +239,22 @@ def main():
                 f"skipping file {filename} in commit {commit.sha} because the file is a config file"
             )
             continue
-        body = review(
+        if(filename.endswith(".puml")):
+            body = review(
             filename,
             content,
             args.openai_model,
             args.openai_temperature,
             args.openai_max_tokens,
-            args.review_type
+            'uml')
+        else:   
+            body = review(
+                filename,
+                content,
+                args.openai_model,
+                args.openai_temperature,
+                args.openai_max_tokens,
+                args.review_type
         )
         if body != "":
             debug(f"attaching comment body to review:\n{body}")
