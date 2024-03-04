@@ -85,6 +85,10 @@ def prompt(filename: str, contents: str, review_type: str) -> str:
             "       b. How adjustable is the code to creating new integration and regression tests\n"
             "       c. How much more complexity does it add to performing UI automation tests\n"
             "       d. Generate unit tests at the end of this review\n"
+            "   5. Error Handling\n"
+            "       a. How well can it handle exceptions\n"
+            "       b. Are proper handling methods used\n"
+            "       c. Can some errors be handled before they occur\n"
             "Provide your feedback in a numbered list for each category. At the end of your answer, summarize the recommended changes to improve the quality of the code provided.\n"
             f"```\n{contents}\n```"
         )
