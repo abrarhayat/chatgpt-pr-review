@@ -108,7 +108,12 @@ def prompt(filename: str, contents: str, review_type: str) -> str:
                 "If everything is fine, generate PlantUML for the changes, otherwise correct the changes and then generate PlantUML\n"
                 "If the file itself was PlantUML, improve the PlantUML\n"
             f"```\n{contents}\n```"
-        )      
+        )
+    elif(review_type == 'tdd'):
+        return (
+            f"Please evaluate the {code} below and generate tests on based tdd practices based on the given code. Please only generate code and annotate the tests:\n"
+            f"```\n{contents}\n```"
+        )
 
 
 def is_merge_commit(commit: Commit.Commit) -> bool:
@@ -217,7 +222,7 @@ def main():
         default='',
         type=str,
         help="review type",
-        choices=["uml", "scalability", "performance", ''], # Leave empty for default checklist based review
+        choices=["uml", "scalability", "performance", 'tdd', ''], # Leave empty for default checklist based review
     )
     args = parser.parse_args()
 
