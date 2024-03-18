@@ -117,10 +117,13 @@ def prompt(filename: str, contents: str, review_type: str) -> str:
             f"```\n{contents}\n```"
         )
     elif(review_type == 'ci/cd'):
+        info(contents)
         return (
             f"Based on the file names, as "
             f"```\n{contents}\n```"
-            f'Generate a suggested yml file for CI/CD for tests for the file names. Please only include the relevant files for testing by looking into the filenames.'
+            f'Generate a suggested yml file for CI/CD for tests for the file names. Please look at the file names and include a test file for each of the regular source files.'
+            f'For Example: It there is a file with filename Util.java, then generate a yml file which would include a test file called UtilTest.java. This will be true for all the source files.'
+            f'Please remember that the user will be responsible for adding the test files and pushing them, you should only include the test files to be run in CI/CD. So it will only run the test files in CI/CD.'
         )
 
 
