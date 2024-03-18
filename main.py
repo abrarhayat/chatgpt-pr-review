@@ -116,6 +116,12 @@ def prompt(filename: str, contents: str, review_type: str) -> str:
             f"Make sure to suggest the best practices of keeping the tests in a separate file so that all the test files can be run together as part of CI/CD when the code is pushed.\n"
             f"```\n{contents}\n```"
         )
+    elif(review_type == 'ci/cd'):
+        return (
+            f"Based on the file names, as "
+            f"```\n{contents}\n```"
+            f'Generate a suggested yml file for CI/CD for tests for the file names. Please only include the relevant files for testing by looking into the filenames.'
+        )
 
 
 def is_merge_commit(commit: Commit.Commit) -> bool:
@@ -278,6 +284,27 @@ def main():
                     "body": body,
                 }
             )
+    if(args.review_type == 'tdd'):
+        all_files_names = [file[0] for file in files]
+        content = ', '.join(all_files_names)
+        body = review(
+            'test.yml',
+            content,
+            args.openai_model,
+            args.openai_temperature,
+            args.openai_max_tokens,
+            'ci/cd'
+        )
+        if body != "":
+            debug(f"attaching comment body to review:\n{body}")
+            comments.append(
+                {
+                    "path": filename,
+                    # "line": line,
+                    "position": 1,
+                    "body": body,
+                }
+            )        
 
     if len(comments) > 0:
         pull.create_review(
