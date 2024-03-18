@@ -112,6 +112,8 @@ def prompt(filename: str, contents: str, review_type: str) -> str:
     elif(review_type == 'tdd'):
         return (
             f"Please evaluate the {code} below and generate tests on based tdd practices based on the given code. Please only generate code and annotate the tests:\n"
+            f"Read through the file and determine it is already a test file, then make an attempt to improve it, otherwise generate unit tests for the file keeping in mind that."
+            f"Make sure to suggest the best practices of keeping the tests in a separate file so that all the test files can be run together as part of CI/CD when the code is pushed.\n"
             f"```\n{contents}\n```"
         )
 
