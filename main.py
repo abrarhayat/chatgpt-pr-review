@@ -9,6 +9,7 @@ from typing import Iterable, List, Tuple, Optional
 from argparse import ArgumentParser
 from re import search
 import openai
+import anthropic
 from github import Github, PullRequest, Commit
 from re import search
 
@@ -222,14 +223,14 @@ def get_prev_content(current_content: str, prev_content: str, max_tokens: int) -
 
 
 def review(
-    filename: str, content: str, model: str, temperature: float, max_tokens: int, review_type: str
+    filename: str, content: str, model: str, temperature: float, max_tokens: int, review_type: str, anthropic_api_key: str
 ) -> str:
     x = 0
     global prev_content
     while True:
         try:
             chat_review = (
-                openai.ChatCompletion.create(
+                anthropic.Anthropic(api_key=anthropic_api_key).messages.create(
                     model=model,
                     temperature=temperature,
                     max_tokens=max_tokens,
@@ -248,12 +249,13 @@ def review(
                         }
                     ],
                 )
-                .choices[0]
-                .message.content
+                .content[0]
+                .text
             )
             prev_content = prev_content.join([prev_content, '\n', chat_review])
             return f"*ChatGPT review for {filename}:*\n" f"{chat_review}"
-        except openai.error.RateLimitError:
+        except anthropic.RateLimitError as e:
+            print(e)
             if x < OPENAI_MAX_RETRIES:
                 info("OpenAI rate limit hit, backing off and trying again...")
                 sleep(OPENAI_BACKOFF_SECONDS)
@@ -341,7 +343,8 @@ def main():
             args.openai_model,
             args.openai_temperature,
             args.openai_max_tokens,
-            'uml')
+            'uml',
+            anthropic_api_key=args.openai_api_key)
         else:   
             body = review(
                 filename,
@@ -370,7 +373,8 @@ def main():
             args.openai_model,
             args.openai_temperature,
             args.openai_max_tokens,
-            'ci/cd'
+            'ci/cd', 
+            anthropic_api_key=args.openai_api_key
         )
         if body != "":
             debug(f"attaching comment body to review:\n{body}")
