@@ -129,6 +129,7 @@ def prompt(filename: str, contents: str, review_type: str) -> str:
             f'For Example: It there is a file with filename Util.java, then generate a yml file which would include a test file called UtilTest.java. This will be true for all the source files.'
             f'Please remember that the user will be responsible for adding the test files and pushing them, you should only include the test files to be run in CI/CD. So it will only run the test files in CI/CD.'
             f'Make sure the yml file runs on Pull Request with types opened and synchronize and with permission of write-all.'
+            f'Make sure the latest versions of executable files are used when the tests are run. For example, if the technology is Java, then make sure to use the latest version of JUnit5 jar to be included.'
         )
 
 
@@ -285,7 +286,7 @@ def main():
                 f"skipping file {filename} in commit {commit.sha} because the file is empty"
             )
             continue
-        if(filename.endswith(".config")):
+        if(filename.endswith(".config") or filename.endswith(".yml")):
             info(
                 f"skipping file {filename} in commit {commit.sha} because the file is a config file"
             )
