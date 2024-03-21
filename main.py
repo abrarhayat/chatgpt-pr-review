@@ -1,4 +1,7 @@
 from fnmatch import fnmatch
+import nltk
+from nltk.tokenize import word_tokenize
+nltk.download('punkt')
 from logging import info, basicConfig, getLevelName, debug
 from time import sleep
 import os
@@ -10,6 +13,7 @@ from github import Github, PullRequest, Commit
 
 OPENAI_BACKOFF_SECONDS = 20  # 3 requests per minute
 OPENAI_MAX_RETRIES = 3
+prev_content = ""
 
 
 def code_type(filename: str) -> str | None:
@@ -158,10 +162,26 @@ def files_for_review(
     return changes.items()
 
 
+def get_prev_content(current_content: str, prev_content: str, max_tokens: int) -> str:
+    current_content_tokens = word_tokenize(current_content)
+    prev_content_tokens = word_tokenize(prev_content)
+    total_length_for_tokens = len(current_content_tokens) + len(prev_content_tokens)
+    if total_length_for_tokens > max_tokens:
+        remaining_token_length = max_tokens - len(current_content_tokens)
+        if remaining_token_length > 0:
+            start_index = len(prev_content) - prev_content_tokens
+            prev_content_tokens_shortened = prev_content_tokens[start_index:]
+            prev_content = " ".join(prev_content_tokens_shortened)
+        else:
+            prev_content = ""
+    return prev_content
+
+
 def review(
     filename: str, content: str, model: str, temperature: float, max_tokens: int, review_type: str
 ) -> str:
     x = 0
+    global prev_content
     while True:
         try:
             chat_review = (
@@ -171,6 +191,14 @@ def review(
                     max_tokens=max_tokens,
                     messages=[
                         {
+                            "role": "system",
+                            "content": "You are a Code Review assistant who suggests best testing practices by suggesting  unit tests for the given code.",
+                        },
+                        {
+                            "role": "assistant",
+                            "content": f"These are the previous responses I sent: \n {get_prev_content(prev_content, content, max_tokens)}",
+                        },
+                        {
                             "role": "user",
                             "content": prompt(filename, content, review_type=review_type),
                         }
@@ -179,6 +207,7 @@ def review(
                 .choices[0]
                 .message.content
             )
+            prev_content = prev_content.join([prev_content, '\n', chat_review])
             return f"*ChatGPT review for {filename}:*\n" f"{chat_review}"
         except openai.error.RateLimitError:
             if x < OPENAI_MAX_RETRIES:
