@@ -322,7 +322,7 @@ def main():
         all_files_names = [file[0] for file in files]
         content = ', '.join(all_files_names)
         body = review(
-            'test.yml',
+            '.github/workflows/test.yml',
             content,
             args.openai_model,
             args.openai_temperature,
@@ -333,7 +333,7 @@ def main():
             debug(f"attaching comment body to review:\n{body}")
             comments.append(
                 {
-                    "path": filename,
+                    "path": '.github/workflows/test.yml',
                     # "line": line,
                     "position": 1,
                     "body": body,
