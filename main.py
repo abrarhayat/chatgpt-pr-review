@@ -10,6 +10,7 @@ from argparse import ArgumentParser
 from re import search
 import openai
 from github import Github, PullRequest, Commit
+from re import search
 
 OPENAI_BACKOFF_SECONDS = 20  # 3 requests per minute
 OPENAI_MAX_RETRIES = 3
@@ -28,6 +29,19 @@ def code_type(filename: str) -> str | None:
                 return "Java"
             case "py":
                 return "Python"
+def test_framework(filename: str) -> str | None:
+    match = search(r"^.*\.([^.]*)$", filename)
+    if match:
+        extension = match.group(1)
+        if extension == "js":
+            return "Jest"
+        elif extension == "ts":
+            return "Jest"
+        elif extension == "java":
+            return "JUnit"
+        elif extension == "py":
+            return "pytest"
+    return ""          
 
 
 def prompt(filename: str, contents: str, review_type: str) -> str:
@@ -37,6 +51,8 @@ def prompt(filename: str, contents: str, review_type: str) -> str:
     type = code_type(filename)
     if type:
         code = f"{type} {code}"
+    if(review_type == ""):
+        review_type = "tdr"    
     if(review_type == "checklist"):
         return (
             f"Please evaluate the {code} below.\n"
@@ -113,13 +129,6 @@ def prompt(filename: str, contents: str, review_type: str) -> str:
                 "If the file itself was PlantUML, improve the PlantUML\n"
             f"```\n{contents}\n```"
         )
-    elif(review_type == 'tdd'):
-        return (
-            f"Please evaluate the {code} below and generate tests on based tdd practices based on the given code. Please only generate code and annotate the tests:\n"
-            f"Read through the file and determine it is already a test file, then make an attempt to improve it, otherwise generate unit tests for the file keeping in mind that."
-            f"Make sure to suggest the best practices of keeping the tests in a separate file so that all the test files can be run together as part of CI/CD when the code is pushed.\n"
-            f"```\n{contents}\n```"
-        )
     elif(review_type == 'ci/cd'):
         info(contents)
         return (
@@ -129,7 +138,39 @@ def prompt(filename: str, contents: str, review_type: str) -> str:
             f'For Example: It there is a file with filename Util.java, then generate a yml file which would include a test file called UtilTest.java. This will be true for all the source files.'
             f'Please remember that the user will be responsible for adding the test files and pushing them, you should only include the test files to be run in CI/CD. So it will only run the test files in CI/CD.'
             f'Make sure the yml file runs on Pull Request with types opened and synchronize and with permission of write-all.'
-            f'Make sure the latest versions of executable files are used when the tests are run. For example, if the technology is Java, then make sure to use the latest version of JUnit5 jar to be included.'
+            f"Make sure that the tests use the technology relevant to the file. For this file, use {test_framework(filename)}. Make sure to suggest the latest version of the test framework.\n"
+        )
+    # By default do a test driven review
+    else:
+        return (
+            f"Please evaluate the {code} below.\n"
+            "Use the following checklist to guide your analysis:\n"
+            "   1. Efficiency of the algorithm\n"
+            "       a. Time Complexity\n"
+            "       b. Space Complexity\n"
+            "       c. Data Structure used\n"
+            "   2. Maintainability of code for further improvements\n"
+            "       a. Readability of code\n"
+            "       b. Reusability of code\n"
+            "       c. How well can the functionalities be extended\n"
+            "   3. User Requests\n"
+            "       a. Number of requests that can be served without making too many changes to the code\n"
+            "       b. Speed of response to incoming requests given memory constraints\n"
+            "       c. How well will it scale in terms of disk space\n"
+            "   4. Debugging/Testing\n"
+            "       a. How well will can it be debugged or tested\n"
+            "       b. How adjustable is the code to creating new integration and regression tests\n"
+            "       c. How much more complexity does it add to performing UI automation tests\n"
+            "   5. Error Handling\n"
+            "       a. How well can it handle exceptions\n"
+            "       b. Are proper handling methods used\n"
+            "       c. Can some errors be handled before they occur\n"
+            "Provide your feedback in a numbered list for each category. At the end of your answer, summarize the recommended changes to improve the quality of the code provided.\n"
+            f"After the review is done. please evaluate the {code} below and generate unit tests on best practices. Please only generate code and annotate the tests. If you think that it is already a test file, then please do not generate any code.\n"
+            f"Read through the file and determine it is already a test file, then make an attempt to improve it, otherwise generate unit tests for the file keeping in mind that."
+            f"Make sure to suggest the best practices of keeping the tests in a separate file so that all the test files can be run together as part of CI/CD when the code is pushed.\n"
+            f"Make sure that the tests use the technology relevant to the file. For this file, use {test_framework(filename)}. Make sure to suggest the latest version of the test framework.\n"
+            f"```\n{contents}\n```"
         )
 
 
@@ -170,11 +211,13 @@ def get_prev_content(current_content: str, prev_content: str, max_tokens: int) -
     if total_length_for_tokens > max_tokens:
         remaining_token_length = max_tokens - len(current_content_tokens)
         if remaining_token_length > 0:
-            start_index = len(prev_content) - prev_content_tokens
+            start_index = len(prev_content) - len(prev_content_tokens)
             prev_content_tokens_shortened = prev_content_tokens[start_index:]
             prev_content = " ".join(prev_content_tokens_shortened)
         else:
             prev_content = ""
+    else:
+        prev_content = ""        
     return prev_content
 
 
@@ -264,7 +307,7 @@ def main():
         default='',
         type=str,
         help="review type",
-        choices=["uml", "scalability", "performance", 'tdd', ''], # Leave empty for default checklist based review
+        choices=["uml", "scalability", "performance", 'tdr', ''], # Leave empty for default checklist based review
     )
     args = parser.parse_args()
 
@@ -318,7 +361,7 @@ def main():
                     "body": body,
                 }
             )
-    if(args.review_type == 'tdd'):
+    if(args.review_type == 'tdr'):
         all_files_names = [file[0] for file in files]
         content = ', '.join(all_files_names)
         body = review(
