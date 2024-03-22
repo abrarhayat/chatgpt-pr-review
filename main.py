@@ -352,7 +352,8 @@ def main():
                 args.openai_model,
                 args.openai_temperature,
                 args.openai_max_tokens,
-                args.review_type
+                args.review_type,
+                anthropic_api_key=args.openai_api_key
         )
         if body != "":
             debug(f"attaching comment body to review:\n{body}")
