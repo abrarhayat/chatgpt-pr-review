@@ -375,13 +375,12 @@ def main():
         if body != "":
             debug(f"attaching comment body to review:\n{body}")
             comments.append(
-                {
-                    "path": '.github/workflows/test.yml',
-                    # "line": line,
-                    "position": 1,
-                    "body": body,
-                }
-            )        
+            {
+                "path": filename,
+                "position": 1,
+                "body": body
+            }
+        )        
 
     if len(comments) > 0:
         pull.create_review(
