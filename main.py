@@ -379,12 +379,19 @@ def main():
         if body != "":
             debug(f"attaching comment body to review:\n{body}")
             comments.append(
+<<<<<<< HEAD
             {
                 "path": filename,
                 "position": 1,
                 "body": body
             }
         )        
+=======
+                {
+                    "body": body,
+                }
+            )        
+>>>>>>> 49e37fa (Removed path and position for test.yml as it may not have changed in the Pull Request)
 
     if len(comments) > 0:
         pull.create_review(
