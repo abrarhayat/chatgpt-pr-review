@@ -245,12 +245,12 @@ def review(
                             f"and may not have had a good grasp of the vulnerabilities in their code and may miss out on important aspects of design and maintainability.",
                         },
                         {
-                            "role": "assistant",
-                            "content": f"These are the previous responses I sent on other related files: \n {get_prev_content(prev_content, content, max_tokens)}",
-                        },
-                        {
                             "role": "user",
                             "content": prompt(filename, content, review_type=review_type),
+                        },
+                        {
+                            "role": "assistant",
+                            "content": f"These are the previous responses I sent: {get_prev_content(prev_content, content, max_tokens)}, here is my response for this file (",
                         }
                     ],
                 )
