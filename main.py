@@ -237,12 +237,12 @@ def review(
                     system="You are a Code Review assistant who suggests best testing practices by suggesting  unit tests for the given code.",
                     messages=[
                         {
-                            "role": "assistant",
-                            "content": f"These are the previous responses I sent: \n {get_prev_content(prev_content, content, max_tokens)}",
-                        },
-                        {
                             "role": "user",
                             "content": prompt(filename, content, review_type=review_type),
+                        },
+                        {
+                            "role": "assistant",
+                            "content": f"These are the previous responses I sent: {get_prev_content(prev_content, content, max_tokens)}, here is my response for this file (",
                         }
                     ],
                 )
