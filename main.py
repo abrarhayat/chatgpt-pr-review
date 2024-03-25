@@ -235,14 +235,6 @@ def review(
                     max_tokens=max_tokens,
                     messages=[
                         {
-                            "role": "system",
-                            "content": "You are a Code Review assistant who suggests best testing practices by suggesting  unit tests for the given code.",
-                        },
-                        {
-                            "role": "assistant",
-                            "content": f"These are the previous responses I sent: \n {get_prev_content(prev_content, content, max_tokens)}",
-                        },
-                        {
                             "role": "user",
                             "content": prompt(filename, content, review_type=review_type),
                         }
@@ -251,7 +243,6 @@ def review(
                 .choices[0]
                 .message.content
             )
-            prev_content = prev_content.join([prev_content, '\n', chat_review])
             return f"*ChatGPT review for {filename}:*\n" f"{chat_review}"
         except openai.error.RateLimitError:
             if x < OPENAI_MAX_RETRIES:
