@@ -298,7 +298,7 @@ def main():
         default='',
         type=str,
         help="review type",
-        choices=["uml", "scalability", "performance", 'tdr', ''], # Leave empty for default checklist based review
+        choices=["uml", "scalability", "performance", 'tdr', 'checklist', ''], # Leave empty for default checklist based review
     )
     args = parser.parse_args()
 
