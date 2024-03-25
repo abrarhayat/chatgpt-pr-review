@@ -234,7 +234,8 @@ def review(
                     model='claude-3-opus-20240229',
                     temperature=temperature,
                     max_tokens=max_tokens,
-                    system="You are a Code Review assistant who suggests best testing practices by suggesting  unit tests for the given code.",
+                    system="You are a Code Review assistant tool being run from Github workflows who comments on Pull Requests and suggests" + 
+                    "best testing practices on how to write unit tests for the given code.",
                     messages=[
                         {
                             "role": "user",
