@@ -231,7 +231,7 @@ def review(
         try:
             chat_review = (
                 anthropic.Anthropic(api_key=anthropic_api_key).messages.create(
-                    model=model,
+                    model='claude-3-opus-20240229',
                     temperature=temperature,
                     max_tokens=max_tokens,
                     system="You are a Code Review assistant who suggests best testing practices by suggesting  unit tests for the given code.",
