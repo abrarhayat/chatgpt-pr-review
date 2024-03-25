@@ -234,11 +234,8 @@ def review(
                     model=model,
                     temperature=temperature,
                     max_tokens=max_tokens,
+                    system="You are a Code Review assistant who suggests best testing practices by suggesting  unit tests for the given code.",
                     messages=[
-                        {
-                            "role": "system",
-                            "content": "You are a Code Review assistant who suggests best testing practices by suggesting  unit tests for the given code.",
-                        },
                         {
                             "role": "assistant",
                             "content": f"These are the previous responses I sent: \n {get_prev_content(prev_content, content, max_tokens)}",
@@ -253,11 +250,11 @@ def review(
                 .text
             )
             prev_content = prev_content.join([prev_content, '\n', chat_review])
-            return f"*ChatGPT review for {filename}:*\n" f"{chat_review}"
+            return f"*Claude AI review for {filename}:*\n" f"{chat_review}"
         except anthropic.RateLimitError as e:
             print(e)
             if x < OPENAI_MAX_RETRIES:
-                info("OpenAI rate limit hit, backing off and trying again...")
+                info("Claude AI rate limit hit, backing off and trying again...")
                 sleep(OPENAI_BACKOFF_SECONDS)
                 x+=1
             else:
@@ -380,19 +377,12 @@ def main():
         if body != "":
             debug(f"attaching comment body to review:\n{body}")
             comments.append(
-<<<<<<< HEAD
             {
                 "path": filename,
                 "position": 1,
                 "body": body
             }
         )        
-=======
-                {
-                    "body": body,
-                }
-            )        
->>>>>>> 49e37fa (Removed path and position for test.yml as it may not have changed in the Pull Request)
 
     if len(comments) > 0:
         pull.create_review(
