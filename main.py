@@ -234,23 +234,16 @@ def review(
                     model='claude-3-opus-20240229',
                     temperature=temperature,
                     max_tokens=max_tokens,
-                    system="You are a Code Review assistant tool being run from Github workflows who comments on Pull Requests and suggests" + 
-                    "best testing practices on how to write unit tests for the given code.",
                     messages=[
                         {
                             "role": "user",
                             "content": prompt(filename, content, review_type=review_type),
-                        },
-                        {
-                            "role": "assistant",
-                            "content": f"These are the previous responses I sent: {get_prev_content(prev_content, content, max_tokens)}, here is my response for this file (",
                         }
                     ],
                 )
                 .content[0]
                 .text
             )
-            prev_content = prev_content.join([prev_content, '\n', chat_review])
             return f"*Claude AI review for {filename}:*\n" f"{chat_review}"
         except anthropic.RateLimitError as e:
             print(e)
