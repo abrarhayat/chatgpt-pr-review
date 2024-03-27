@@ -316,6 +316,7 @@ def main():
     args = parser.parse_args()
 
     print("--anthropic_api_key", args.anthropic_api_key)
+    print("--review_type", args.review_type)
 
     basicConfig(encoding="utf-8", level=getLevelName(args.logging.upper()))
     file_patterns = args.files.split(",")
