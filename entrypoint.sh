@@ -9,4 +9,3 @@ python /main.py \
 --openai_model "$7" \
 --openai_temperature "$8" \
 --openai_max_tokens "$9" \
---logging "$10" \
