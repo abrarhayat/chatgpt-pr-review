@@ -234,17 +234,11 @@ def review(
                     model='claude-3-opus-20240229',
                     temperature=temperature,
                     max_tokens=max_tokens,
-                    system="You are a Code Review assistant tool being run from Github workflows who comments on Pull Requests and suggests" + 
-                    "best testing practices on how to write unit tests for the given code.",
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": 
-                            f"- You are a Code Review assistant who throughly reviews code and suggests improvements based on best practices.\n" +
+                    system=f"- You are a Code Review assistant who throughly reviews code and suggests improvements based on best practices.\n" +
                             f"- You are reviewing code for Master's students completing their capstone project.\n" +
                             f"- The Master's students whose code you are reviewing, may not have a lot of prior experience with maintaining large codebases and " +
                             f"and may not have had a good grasp of the vulnerabilities in their code and may miss out on important aspects of design and maintainability.",
-                        },
+                    messages=[
                         {
                             "role": "user",
                             "content": prompt(filename, content, review_type=review_type),
