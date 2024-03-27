@@ -236,11 +236,15 @@ def review(
                     messages=[
                         {
                             "role": "system",
-                            "content": "You are a Code Review assistant who suggests best testing practices by suggesting  unit tests for the given code.",
+                            "content": 
+                            f"- You are a Code Review assistant who suggests best testing practices by suggesting unit tests for the given code.\n" +
+                            f"- You are reviewing code for Master's students completing their capstone project \n" +
+                            f"- The Master's students whose code you are reviewing, may not have a lot of prior experience with testing" +
+                            f"and debugging and might not have had a good grasp of the best practices and may miss out vulnerabilities in their code. \n",
                         },
                         {
                             "role": "assistant",
-                            "content": f"These are the previous responses I sent: \n {get_prev_content(prev_content, content, max_tokens)}",
+                            "content": f"These are the previous responses I sent on other related files: \n {get_prev_content(prev_content, content, max_tokens)}",
                         },
                         {
                             "role": "user",
