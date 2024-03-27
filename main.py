@@ -237,10 +237,10 @@ def review(
                         {
                             "role": "system",
                             "content": 
-                            f"- You are a Code Review assistant who suggests best testing practices by suggesting unit tests for the given code.\n" +
-                            f"- You are reviewing code for Master's students completing their capstone project \n" +
-                            f"- The Master's students whose code you are reviewing, may not have a lot of prior experience with testing" +
-                            f"and debugging and might not have had a good grasp of the best practices and may miss out vulnerabilities in their code. \n",
+                            f"- You are a Code Review assistant who throughly reviews code and suggests improvements based on best practices.\n" +
+                            f"- You are reviewing code for Master's students completing their capstone project.\n" +
+                            f"- The Master's students whose code you are reviewing, may not have a lot of prior experience with maintaining large codebases and " +
+                            f"and may not have had a good grasp of the vulnerabilities in their code and may miss out on important aspects of design and maintainability.",
                         },
                         {
                             "role": "assistant",
