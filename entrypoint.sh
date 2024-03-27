@@ -8,4 +8,5 @@ python /main.py \
 --openai_temperature "$6" \
 --openai_max_tokens "$7" \
 --logging "$8" \
---review_type "$9"
+--review_type "$9" \
+--anthropic_api_key "$10"

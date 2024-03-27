@@ -311,7 +311,11 @@ def main():
         help="review type",
         choices=["uml", "scalability", "performance", 'tdr', 'checklist', ''], # Leave empty for default checklist based review
     )
+    parser.add_argument("--anthropic_api_key", required=True, help="Anthropic API Key")
+
     args = parser.parse_args()
+
+    print("--anthropic_api_key", args.anthropic_api_key)
 
     basicConfig(encoding="utf-8", level=getLevelName(args.logging.upper()))
     file_patterns = args.files.split(",")
@@ -344,7 +348,7 @@ def main():
             args.openai_temperature,
             args.openai_max_tokens,
             'uml',
-            anthropic_api_key=args.openai_api_key)
+            anthropic_api_key=args.anthropic_api_key)
         else:   
             body = review(
                 filename,
@@ -353,7 +357,7 @@ def main():
                 args.openai_temperature,
                 args.openai_max_tokens,
                 args.review_type,
-                anthropic_api_key=args.openai_api_key
+                anthropic_api_key=args.anthropic_api_key
         )
         if body != "":
             debug(f"attaching comment body to review:\n{body}")
@@ -375,7 +379,7 @@ def main():
             args.openai_temperature,
             args.openai_max_tokens,
             'ci/cd', 
-            anthropic_api_key=args.openai_api_key
+            anthropic_api_key=args.anthropic_api_key
         )
         if body != "":
             debug(f"attaching comment body to review:\n{body}")
