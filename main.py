@@ -245,7 +245,7 @@ def review(
                         },
                         {
                             "role": "assistant",
-                            "content": f"These are the previous responses I sent: {get_prev_content(prev_content, content, max_tokens)}, here is my response for this file (",
+                            "content": f"Taking into account the previous review(s) I had sent: {get_prev_content(prev_content, content, max_tokens)}, here is my response for this file (",
                         }
                     ],
                 )
