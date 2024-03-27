@@ -4,6 +4,12 @@ inputs:
   openai_api_key:
     description: "OpenAI API Key"
     required: true
+  review_type:
+    description: "Review Type"
+    required: false
+  anthropic_api_key:
+    description: "Anthropic Api Key"
+    required: true  
   github_token:
     description: "Github API Key"
     required: true
@@ -30,17 +36,13 @@ inputs:
     description: "The level to log at. One of [debug, info, warning, error]"
     required: false
     default: "warning"
-  review_type:
-    description: "Review Type"
-    required: false
-  anthropic_api_key:
-    description: "Anthropic Api Key"
-    required: true
 runs:
   using: "docker"
   image: "Dockerfile"
   args:
     - ${{ inputs.openai_api_key }}
+    - ${{ inputs.review_type }}
+    - ${{ inputs.anthropic_api_key }}
     - ${{ inputs.github_token }}
     - ${{ inputs.github_pr_id }}
     - ${{ inputs.files }}
@@ -48,5 +50,3 @@ runs:
     - ${{ inputs.openai_temperature }}
     - ${{ inputs.openai_max_tokens }}
     - ${{ inputs.logging }}
-    - ${{ inputs.review_type }}
-    - ${{ inputs.anthropic_api_key }}

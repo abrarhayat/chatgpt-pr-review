@@ -269,6 +269,14 @@ def review(
 def main():
     parser = ArgumentParser()
     parser.add_argument("--openai_api_key", required=True, help="OpenAI API Key")
+    parser.add_argument(
+        "--review_type",
+        default='',
+        type=str,
+        help="review type",
+        choices=["uml", "scalability", "performance", 'tdr', 'checklist', ''], # Leave empty for default checklist based review
+    )
+    parser.add_argument("--anthropic_api_key", required=True, help="Anthropic API Key")
     parser.add_argument("--github_token", required=True, help="Github Access Token")
     parser.add_argument(
         "--github_pr_id", required=True, type=int, help="Github PR ID to review"
@@ -304,17 +312,9 @@ def main():
         choices=["debug", "info", "warning", "error"],
     )
 
-    parser.add_argument(
-        "--review_type",
-        default='',
-        type=str,
-        help="review type",
-        choices=["uml", "scalability", "performance", 'tdr', 'checklist', ''], # Leave empty for default checklist based review
-    )
-    parser.add_argument("--anthropic_api_key", required=True, help="Anthropic API Key")
-
     args = parser.parse_args()
 
+    print("--openai_api_key", args.openai_api_key)
     print("--anthropic_api_key", args.anthropic_api_key)
     print("--review_type", args.review_type)
 
