@@ -4,6 +4,9 @@ inputs:
   openai_api_key:
     description: "OpenAI API Key"
     required: true
+  anthropic_api_key:
+    description: "Anthropic API Key"
+    required: true
   github_token:
     description: "Github API Key"
     required: true
@@ -38,6 +41,7 @@ runs:
   image: "Dockerfile"
   args:
     - ${{ inputs.openai_api_key }}
+    - ${{ inputs.anthropic_api_key }}
     - ${{ inputs.github_token }}
     - ${{ inputs.github_pr_id }}
     - ${{ inputs.files }}

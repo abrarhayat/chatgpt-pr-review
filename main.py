@@ -269,6 +269,7 @@ def review(
 def main():
     parser = ArgumentParser()
     parser.add_argument("--openai_api_key", required=True, help="OpenAI API Key")
+    parser.add_argument("--anthropic_api_key", required=True, help="Anthropic API Key")
     parser.add_argument("--github_token", required=True, help="Github Access Token")
     parser.add_argument(
         "--github_pr_id", required=True, type=int, help="Github PR ID to review"
@@ -344,7 +345,7 @@ def main():
             args.openai_temperature,
             args.openai_max_tokens,
             'uml',
-            anthropic_api_key=args.openai_api_key)
+            anthropic_api_key=args.anthropic_api_key)
         else:   
             body = review(
                 filename,
@@ -353,7 +354,7 @@ def main():
                 args.openai_temperature,
                 args.openai_max_tokens,
                 args.review_type,
-                anthropic_api_key=args.openai_api_key
+                anthropic_api_key=args.anthropic_api_key
         )
         if body != "":
             debug(f"attaching comment body to review:\n{body}")
@@ -375,7 +376,7 @@ def main():
             args.openai_temperature,
             args.openai_max_tokens,
             'ci/cd', 
-            anthropic_api_key=args.openai_api_key
+            anthropic_api_key=args.anthropic_api_key
         )
         if body != "":
             debug(f"attaching comment body to review:\n{body}")
