@@ -4,6 +4,9 @@ inputs:
   openai_api_key:
     description: "OpenAI API Key"
     required: true
+  anthropic_api_key:
+    description: "Anthropic API Key"
+    required: true
   github_token:
     description: "Github API Key"
     required: true
@@ -26,10 +29,6 @@ inputs:
     description: "The maximum number of tokens to generate in the completion."
     required: false
     default: "2048"
-  logging:
-    description: "The level to log at. One of [debug, info, warning, error]"
-    required: false
-    default: "warning"
   review_type:
     description: "Review Type"
     required: false    
@@ -38,11 +37,11 @@ runs:
   image: "Dockerfile"
   args:
     - ${{ inputs.openai_api_key }}
+    - ${{ inputs.anthropic_api_key }}
     - ${{ inputs.github_token }}
     - ${{ inputs.github_pr_id }}
     - ${{ inputs.files }}
     - ${{ inputs.openai_model }}
     - ${{ inputs.openai_temperature }}
     - ${{ inputs.openai_max_tokens }}
-    - ${{ inputs.logging }}
     - ${{ inputs.review_type }}
