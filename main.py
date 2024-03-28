@@ -249,7 +249,7 @@ def review(
                         },
                         {
                             "role": "user",
-                            "content": prompt(filename, content, review_type=review_type),
+                            "content": f"Taking in context the previous responses from you, {prompt(filename, content, review_type=review_type)}",
                         }
                     ],
                 )
