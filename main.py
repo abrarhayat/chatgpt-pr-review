@@ -1,7 +1,5 @@
 from fnmatch import fnmatch
-import nltk
-from nltk.tokenize import word_tokenize
-nltk.download('punkt')
+import tiktoken
 from logging import info, basicConfig, getLevelName, debug
 from time import sleep
 import os
@@ -204,9 +202,12 @@ def files_for_review(
     return changes.items()
 
 
-def get_prev_content(current_content: str, prev_content: str, max_tokens: int) -> str:
-    current_content_tokens = word_tokenize(current_content)
-    prev_content_tokens = word_tokenize(prev_content)
+def get_prev_content(current_content: str, prev_content: str, max_tokens: int, model: str) -> str:
+    # Only allow half the max tokens for the previous content
+    max_tokens = max_tokens / 2
+    encoding = tiktoken.encoding_for_model(model)
+    current_content_tokens = encoding.encode(current_content)
+    prev_content_tokens = encoding.encode(prev_content)
     total_length_for_tokens = len(current_content_tokens) + len(prev_content_tokens)
     if total_length_for_tokens > max_tokens:
         remaining_token_length = max_tokens - len(current_content_tokens)
@@ -244,7 +245,7 @@ def review(
                         },
                         {
                             "role": "assistant",
-                            "content": f"These are the previous responses I sent on other related files: \n {get_prev_content(prev_content, content, max_tokens)}",
+                            "content": f"These are the previous responses I sent on other related files: \n {get_prev_content(prev_content, content, max_tokens, model)}",
                         },
                         {
                             "role": "user",
