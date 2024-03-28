@@ -297,13 +297,6 @@ def main():
         "--files",
         help="Comma separated list of UNIX file patterns to target for review",
     )
-    parser.add_argument(
-        "--logging",
-        default="warning",
-        type=str,
-        help="logging level",
-        choices=["debug", "info", "warning", "error"],
-    )
 
     parser.add_argument(
         "--review_type",
@@ -314,7 +307,7 @@ def main():
     )
     args = parser.parse_args()
 
-    basicConfig(encoding="utf-8", level=getLevelName(args.logging.upper()))
+    basicConfig(encoding="utf-8", level=getLevelName('INFO'))
     file_patterns = args.files.split(",")
     openai.api_key = args.openai_api_key
     g = Github(args.github_token)

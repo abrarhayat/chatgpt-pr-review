@@ -29,10 +29,6 @@ inputs:
     description: "The maximum number of tokens to generate in the completion."
     required: false
     default: "2048"
-  logging:
-    description: "The level to log at. One of [debug, info, warning, error]"
-    required: false
-    default: "warning"
   review_type:
     description: "Review Type"
     required: false    
@@ -48,5 +44,4 @@ runs:
     - ${{ inputs.openai_model }}
     - ${{ inputs.openai_temperature }}
     - ${{ inputs.openai_max_tokens }}
-    - ${{ inputs.logging }}
     - ${{ inputs.review_type }}
