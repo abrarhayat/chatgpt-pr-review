@@ -203,26 +203,40 @@ def files_for_review(
     return changes.items()
 
 
-def get_prev_content(current_content: str, prev_content: str, max_tokens: int, model: str) -> str:
+def get_prev_content(current_content: str, prev_content_from_ai: str, prev_content_for_review: str, max_tokens: int, model: str) -> str:
     # Only allow half the max tokens for the previous content
     max_tokens = max_tokens / 2
     encoding = tiktoken.encoding_for_model(model)
     current_content_tokens = encoding.encode(current_content)
-    prev_content_tokens = encoding.encode(prev_content)
-    total_length_for_tokens = len(current_content_tokens) + len(prev_content_tokens)
-    if total_length_for_tokens > max_tokens:
+    prev_content_from_ai_tokens = encoding.encode(prev_content_from_ai)
+    prev_content_for_review_tokens = encoding.encode(prev_content_for_review)
+    total_length_for_tokens = len(current_content_tokens) + len(prev_content_from_ai_tokens) + len(prev_content_for_review_tokens)
+    if max_tokens > total_length_for_tokens:
         remaining_token_length = max_tokens - len(current_content_tokens)
         if remaining_token_length > 0:
-            start_index = len(prev_content_tokens) - remaining_token_length
-            info(start_index)
-            prev_content_tokens_shortened = prev_content_tokens[start_index:]
-            prev_content = " ".join(prev_content_tokens_shortened)
+            if(remaining_token_length > len(prev_content_from_ai_tokens)):
+                start_index = 0
+            else:
+                start_index = len(prev_content_from_ai_tokens) - remaining_token_length
+            prev_content_tokens_from_ai_shortened = prev_content_from_ai_tokens[start_index:]
+            prev_content_from_ai = " ".join(encoding.decode(prev_content_tokens_from_ai_shortened))
+            remaining_token_length = remaining_token_length - len(prev_content_tokens_from_ai_shortened)
+            if remaining_token_length > 0:
+                if(remaining_token_length > len(prev_content_for_review_tokens)):
+                    start_index = 0
+                else:
+                    start_index = len(prev_content_for_review_tokens) - remaining_token_length
+                prev_content_for_review_tokens_shortened = prev_content_for_review_tokens[start_index:]
+                prev_content_for_review = " ".join(encoding.decode(prev_content_for_review_tokens_shortened))
+            else:
+                prev_content_for_review = ""
         else:
-            prev_content = ""
+            prev_content_from_ai = ""
+            prev_content_for_review = ""
     else:
-        prev_content = ""
-    info(f"prev_content: {prev_content}")            
-    return prev_content
+        prev_content_from_ai = ""
+        prev_content_for_review = ""
+    return prev_content_from_ai, prev_content_for_review
 
 
 def review(
@@ -231,6 +245,7 @@ def review(
     x = 0
     global prev_content_from_ai
     global prev_content_for_review
+    allowed_prev_content_from_ai, allowed_prev_content_for_review = get_prev_content(content, prev_content_from_ai, prev_content_for_review, max_tokens, model)
     while True:
         try:
             chat_review = (
@@ -248,8 +263,12 @@ def review(
                             f"and may not have had a good grasp of the vulnerabilities in their code and may miss out on important aspects of design and maintainability.",
                         },
                         {
+                            "role": "user",
+                            "content": "These are the previous questions from me on other related files:\n" + allowed_prev_content_for_review,
+                        },
+                        {
                             "role": "assistant",
-                            "content": "These are the previous responses and questions on other related files:\n" + get_prev_content(prev_content_from_ai.join(['\n', prev_content_for_review]), content, max_tokens, model),
+                            "content": "These are the previous responses from me on the previous related files:\n" + allowed_prev_content_from_ai,
                         },
                         {
                             "role": "user",
