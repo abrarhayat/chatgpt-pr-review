@@ -203,22 +203,23 @@ def files_for_review(
 
 
 def get_prev_content(current_content: str, prev_content: str, max_tokens: int, model: str) -> str:
-    # Only allow half the max tokens for the previous content
-    max_tokens = max_tokens / 2
     encoding = tiktoken.encoding_for_model(model)
     current_content_tokens = encoding.encode(current_content)
     prev_content_tokens = encoding.encode(prev_content)
-    total_length_for_tokens = len(current_content_tokens) + len(prev_content_tokens)
-    if total_length_for_tokens > max_tokens:
+    if max_tokens > len(current_content_tokens):
         remaining_token_length = max_tokens - len(current_content_tokens)
         if remaining_token_length > 0:
-            start_index = len(prev_content) - len(prev_content_tokens)
+            if(remaining_token_length > len(prev_content_tokens)):
+                start_index = 0
+            else:
+                start_index = len(prev_content_tokens) - remaining_token_length
             prev_content_tokens_shortened = prev_content_tokens[start_index:]
-            prev_content = " ".join(prev_content_tokens_shortened)
+            prev_content = "".join(encoding.decode(prev_content_tokens_shortened))
         else:
             prev_content = ""
     else:
-        prev_content = ""        
+        prev_content = ""
+    print("prev_content:", prev_content)            
     return prev_content
 
 
@@ -245,7 +246,7 @@ def review(
                         },
                         {
                             "role": "assistant",
-                            "content": f"These are the previous responses I sent on other related files: \n {get_prev_content(prev_content, content, max_tokens, model)}",
+                            "content": "These are the previous responses I sent on other related files:" +  "\n" + get_prev_content(prev_content, content, max_tokens, model),
                         },
                         {
                             "role": "user",
