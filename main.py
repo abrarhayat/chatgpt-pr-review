@@ -214,6 +214,7 @@ def get_prev_content(current_content: str, prev_content: str, max_tokens: int, m
         remaining_token_length = max_tokens - len(current_content_tokens)
         if remaining_token_length > 0:
             start_index = len(prev_content_tokens) - remaining_token_length
+            info(start_index)
             prev_content_tokens_shortened = prev_content_tokens[start_index:]
             prev_content = " ".join(prev_content_tokens_shortened)
         else:
