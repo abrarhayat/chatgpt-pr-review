@@ -246,7 +246,7 @@ def review(
                         },
                         {
                             "role": "assistant",
-                            "content": "These are the previous responses I sent on other related files:" +  "\n" + get_prev_content(prev_content, content, max_tokens, model),
+                            "content": "These are the previous responses I sent on other related files:" +  "\n" + get_prev_content(content, prev_content, max_tokens, model),
                         },
                         {
                             "role": "user",
