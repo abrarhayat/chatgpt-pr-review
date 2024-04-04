@@ -205,7 +205,6 @@ def files_for_review(
 
 def get_prev_content(current_content: str, prev_content_from_ai: str, prev_content_for_review: str, max_tokens: int, model: str) -> str:
     # Only allow half the max tokens for the previous content
-    max_tokens = max_tokens / 2
     encoding = tiktoken.encoding_for_model(model)
     current_content_tokens = encoding.encode(current_content)
     prev_content_from_ai_tokens = encoding.encode(prev_content_from_ai)
@@ -231,9 +230,11 @@ def get_prev_content(current_content: str, prev_content_from_ai: str, prev_conte
             else:
                 prev_content_for_review = ""
         else:
+            print("Max tokens reached as remaining_token_length < 0")
             prev_content_from_ai = ""
             prev_content_for_review = ""
     else:
+        print("Max tokens reached as total_length_for_tokens > max_tokens")
         prev_content_from_ai = ""
         prev_content_for_review = ""
     return prev_content_from_ai, prev_content_for_review
