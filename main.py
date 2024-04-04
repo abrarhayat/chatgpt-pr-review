@@ -247,6 +247,10 @@ def review(
     global prev_content_for_review
     allowed_prev_content_from_ai, allowed_prev_content_for_review = get_prev_content(content, prev_content_from_ai, prev_content_for_review, max_tokens, model)
     while True:
+        print("These are the previous questions from me on other related files:\n" + allowed_prev_content_for_review)
+        print("These are the previous responses from me on the previous related files:\n" + allowed_prev_content_from_ai)
+        info("These are the previous questions from me on other related files:\n" + allowed_prev_content_for_review)
+        info("These are the previous responses from me on the previous related files:\n" + allowed_prev_content_from_ai)
         try:
             chat_review = (
                 openai.ChatCompletion.create(
@@ -257,11 +261,12 @@ def review(
                         {
                             "role": "system",
                             "content": 
-                            f"- You are a Code Review assistant who throughly reviews code and suggests improvements based on best practices.\n" +
-                            f"- You are reviewing code for Master's students completing their capstone project.\n" +
-                            f"- The Master's students whose code you are reviewing, may not have a lot of prior experience with maintaining large codebases and " +
+                            f"You are a Code Review assistant who throughly reviews code and suggests improvements based on best practices.\n" +
+                            f"You are reviewing code for Master's students completing their capstone project.\n" +
+                            f"The Master's students whose code you are reviewing, may not have a lot of prior experience with maintaining large codebases and " +
                             f"and may not have had a good grasp of the vulnerabilities in their code and may miss out on important aspects of design and maintainability." +
-                            f"Code review will be based on annotations found on lines of code. Also address any inconsistencies in the annotations and code."
+                            f"You are reviewing code based on annotations found on lines of code and will also address any inconsistencies in the annotations and code." + 
+                            f"You are reviewing code based on previous responses and questions from other related files which were also reviewed by you.\n"
                         },
                         {
                             "role": "user",
