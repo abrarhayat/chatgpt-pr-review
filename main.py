@@ -269,6 +269,21 @@ def review(
                     f"finally failing request to OpenAI platform for code review, max retries {OPENAI_MAX_RETRIES} exceeded"
                 )
 
+def get_project_readme(repo: any) -> str:
+    # Specify the path to the README file
+    readme_path = "README.md"
+    try:
+        #Try to get the contents of the README file
+        readme_content = repo.get_contents(readme_path)
+
+        # Decode the content from base64
+        readme_text = readme_content.decoded_content.decode("utf-8")
+
+        # return the content
+        return readme_text
+    except Exception as e:
+        print(f"Error fetching README: {e}")
+        return ""
 
 def main():
     parser = ArgumentParser()
@@ -324,19 +339,11 @@ def main():
 
     repo = g.get_repo(os.getenv("GITHUB_REPOSITORY"))
     
-    # Specify the path to the README file
-    readme_path = "README.md"
-    try:
-        # Try to get the contents of the README file
-        readme_content = repo.get_contents(readme_path)
-
-        # Decode the content from base64
-        readme_text = readme_content.decoded_content.decode("utf-8")
-
-        # Print README content
-        print(readme_text)
-    except Exception as e:
-        print(f"Error fetching README: {e}")
+    readme_content = get_project_readme(repo)
+    if(readme_content == ""):
+        print("no README.md found!")
+    else:
+        print("Project README:\n", readme_content)    
 
     pull = repo.get_pull(args.github_pr_id)
     comments = []
