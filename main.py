@@ -323,6 +323,21 @@ def main():
     g = Github(args.github_token)
 
     repo = g.get_repo(os.getenv("GITHUB_REPOSITORY"))
+    
+    # Specify the path to the README file
+    readme_path = "README.md"
+    try:
+        # Try to get the contents of the README file
+        readme_content = repo.get_contents(readme_path)
+
+        # Decode the content from base64
+        readme_text = readme_content.decoded_content.decode("utf-8")
+
+        # Print README content
+        print(readme_text)
+    except Exception as e:
+        print(f"Error fetching README: {e}")
+
     pull = repo.get_pull(args.github_pr_id)
     comments = []
     files = files_for_review(pull, file_patterns)
