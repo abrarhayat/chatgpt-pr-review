@@ -138,6 +138,65 @@ def prompt(filename: str, contents: str, review_type: str) -> str:
             f'Make sure the yml file runs on Pull Request with types opened and synchronize and with permission of write-all.'
             f"Make sure that the tests use the technology relevant to the file. For this file, use {test_framework(filename)}. Make sure to suggest the latest version of the test framework.\n"
         )
+    elif(review_type == 'tdr'):
+        return (
+            f"Please evaluate the {code} below.\n"
+            f"Use the following checklist to guide your analysis:\n"
+            f" 1. Testing Coverage"
+                "a. Assess the overall test coverage of the codebase, including unit tests, integration tests, and end-to-end tests."
+                "b. Evaluate the quality and robustness of the test suite, ensuring it covers a wide range of scenarios and edge cases."
+                "c. Ensure that tests are organized, maintainable, and follow best practices for test-driven development (TDD)."
+                "d. Verify that the test suite is integrated into the CI/CD pipeline and runs consistently."
+            f"2. Continuous Integration and Deployment"
+                "a. Examine the CI/CD pipeline configuration and processes, ensuring they are set up correctly and efficiently."
+                "b. Verify that the pipeline includes essential steps such as linting, building, testing, and artifact generation."
+                "c. Assess the pipeline's reliability, stability, and speed, identifying any bottlenecks or areas for optimization."
+                "d. Ensure that the deployment process is automated, reliable, and can be executed consistently across different environments."
+                "e. Evaluate the rollback and rollforward procedures to ensure they are well-defined and can be executed seamlessly."
+            f"3. Code Quality"
+                "a. Assess the overall code quality, including adherence to coding standards, best practices, and design patterns."
+                "b. Examine the codebase for maintainability, readability, and extensibility, ensuring it follows established guidelines."
+                "c. Identify any code smells, such as duplicated code, excessive complexity, or lack of modularity, and suggest improvements."
+                "d. Verify the code's compliance with security best practices, such as input validation, error handling, and the use of secure libraries.)"
+            f"4. Documentation and Traceability"
+                "a. Evaluate the quality and completeness of the code documentation, including inline comments, READMEs, and technical specifications."
+                "b. Ensure that the documentation accurately reflects the current state of the codebase and is kept up-to-date."
+                "c. Verify that the codebase is properly version-controlled, with clear commit history and meaningful commit messages."
+                "d. Assess the traceability between the codebase, test cases, and any relevant user stories or requirements."
+
+            f"5. Performance and Scalability"
+                "a. Analyze the performance characteristics of the codebase, identifying any potential bottlenecks or areas for optimization."
+                "b. Evaluate the application's ability to handle increased load and traffic, ensuring it can scale effectively."
+                "c. Ensure that the codebase includes appropriate monitoring and logging mechanisms to aid in performance analysis and troubleshooting."
+                "d. Verify that the application's deployment and scaling strategies are well-defined and can be executed efficiently."
+
+            f"6. Error Handling and Logging"
+                "a. Assess the codebase's error handling mechanisms, ensuring that errors are properly caught, logged, and communicated to users."
+                "b. Verify that the logging infrastructure is set up correctly and provides sufficient information for troubleshooting and debugging."
+                "c. Ensure that the logging system integrates with the CI/CD pipeline and monitoring tools for effective incident management."
+                "d. Evaluate the application's ability to gracefully handle and recover from errors, minimizing the impact on the user experience."
+
+            f"7. Test Automation and CI/CD Integration"
+                "a. Examine the test automation suite, ensuring it covers a wide range of test types (unit, integration, end-to-end, etc.)."
+                "b. Verify that the test automation is well-integrated into the CI/CD pipeline, with clear triggering mechanisms and feedback loops."
+                "c. Assess the maintainability and reliability of the test automation suite, ensuring it can be easily updated and run consistently."
+                "d. Evaluate the CI/CD pipeline's ability to provide fast feedback loops, enabling rapid bug detection and resolution."
+
+            f"8. Security and Compliance"
+                "a. Assess the codebase for any security vulnerabilities, such as those identified by static code analysis tools."
+                "b. Ensure that the application follows best practices for secure coding, including input validation, access control, and the use of secure libraries."
+                "c. Verify that the CI/CD pipeline includes steps for security scanning and compliance checks, such as license and dependency analysis."
+                "d. Evaluate the application's adherence to any relevant security standards or industry regulations."
+
+            f"Overall Recommendations"
+                "Based on the review, the following recommendations can be made to improve the quality of the codebase and its alignment with software testing and CI/CD best practices:"
+                    "1. Increase the overall test coverage, ensuring that a comprehensive suite of unit, integration, and end-to-end tests is in place."
+                    "2. Optimize the CI/CD pipeline configuration to improve reliability, speed, and feedback loops, enabling faster bug detection and resolution."
+                    "3. Enhance code quality by addressing any identified code smells, improving maintainability, and following established coding standards and best practices."
+                    "4. Strengthen the documentation and traceability of the codebase, ensuring that it is up-to-date and accurately reflects the current state of the application."
+                    "5. Implement robust error handling and logging mechanisms to aid in troubleshooting and incident management."
+                    "6. Integrate comprehensive security and compliance checks into the CI/CD pipeline to identify and address any potential vulnerabilities or compliance issues."
+        )
     # By default do a test driven review
     else:
         return (
