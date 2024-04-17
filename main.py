@@ -6,11 +6,20 @@ from typing import Iterable, List, Tuple
 from argparse import ArgumentParser
 from re import search
 import openai
+import tiktoken
 from github import Github, PullRequest, Commit
 
 OPENAI_BACKOFF_SECONDS = 20  # 3 requests per minute
 OPENAI_MAX_RETRIES = 3
-
+prev_content = ""
+messages = [{
+              "role": "system",
+              "content": 
+               f"- You are a Code Review assistant who throughly reviews code and suggests improvements based on best practices.\n" +
+               f"- You are reviewing code for Master's students completing their capstone project.\n" +
+               f"- The Master's students whose code you are reviewing, may not have a lot of prior experience with maintaining large codebases and " +
+               f"and may not have had a good grasp of the vulnerabilities in their code and may miss out on important aspects of design and maintainability.",
+            }]
 
 def code_type(filename: str) -> str | None:
     match = search(r"^.*\.([^.]*)$", filename)
@@ -96,6 +105,8 @@ def review(
     filename: str, content: str, model: str, temperature: float, max_tokens: int
 ) -> str:
     x = 0
+    global messages
+    messages.append({"role": "user", "content": f"Taking in context the previous responses from you, {prompt(filename, content)}"})
     while True:
         try:
             chat_review = (
@@ -103,16 +114,12 @@ def review(
                     model=model,
                     temperature=temperature,
                     max_tokens=max_tokens,
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": prompt(filename, content),
-                        }
-                    ],
+                    messages=messages,
                 )
                 .choices[0]
                 .message.content
             )
+            messages.append({"role": "assistant", "content": chat_review})
             return f"*ChatGPT review for {filename}:*\n" f"{chat_review}"
         except openai.error.RateLimitError:
             if x < OPENAI_MAX_RETRIES:
@@ -123,6 +130,25 @@ def review(
                 raise Exception(
                     f"finally failing request to OpenAI platform for code review, max retries {OPENAI_MAX_RETRIES} exceeded"
                 )
+def get_prev_content(current_content: str, prev_content: str, max_tokens: int, model: str) -> str:
+    encoding = tiktoken.encoding_for_model(model)
+    current_content_tokens = encoding.encode(current_content)
+    prev_content_tokens = encoding.encode(prev_content)
+    if max_tokens > len(current_content_tokens):
+        remaining_token_length = max_tokens - len(current_content_tokens)
+        if remaining_token_length > 0:
+            if(remaining_token_length > len(prev_content_tokens)):
+                start_index = 0
+            else:
+                start_index = len(prev_content_tokens) - remaining_token_length
+            prev_content_tokens_shortened = prev_content_tokens[start_index:]
+            prev_content = "".join(encoding.decode(prev_content_tokens_shortened))
+        else:
+            prev_content = ""
+    else:
+        prev_content = ""
+    print("prev_content:", prev_content)            
+    return prev_content            
 
 
 def main():
