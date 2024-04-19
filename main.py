@@ -1,6 +1,5 @@
 from fnmatch import fnmatch
 from logging import info, basicConfig, getLevelName, debug
-from time import sleep
 import os
 from typing import Iterable, List, Tuple
 from argparse import ArgumentParser
@@ -8,12 +7,13 @@ from re import search
 import openai
 from github import Github, PullRequest, Commit
 from dotenv import load_dotenv
+import requests
 
 load_dotenv()
 
 OPENAI_BACKOFF_SECONDS = 20  # 3 requests per minute
 OPENAI_MAX_RETRIES = 3
-
+API_ENDPOINT = os.getenv("OLLAMA_URL")
 
 def code_type(filename: str) -> str:
     extension = filename.split(".")[-1].lower()
@@ -97,34 +97,24 @@ def files_for_review(
 def review(
     filename: str, content: str, model: str, temperature: float, max_tokens: int
 ) -> str:
-    x = 0
-    while True:
-        try:
-            chat_review = (
-                openai.ChatCompletion.create(
-                    model=model,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": prompt(filename, content),
-                        }
-                    ],
-                )
-                .choices[0]
-                .message.content
-            )
-            return f"*ChatGPT review for {filename}:*\n" f"{chat_review}"
-        except openai.error.RateLimitError:
-            if x < OPENAI_MAX_RETRIES:
-                info("OpenAI rate limit hit, backing off and trying again...")
-                sleep(OPENAI_BACKOFF_SECONDS)
-                x+=1
-            else:
-                raise Exception(
-                    f"finally failing request to OpenAI platform for code review, max retries {OPENAI_MAX_RETRIES} exceeded"
-                )
+    try:
+        data = {
+            "model": model,
+            "messages": [{
+                "role": "user",
+                "content": prompt(filename, content),
+            }],
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "stream": False
+        }
+        headers = {"Content-Type": "application/json"}
+        response = requests.post(API_ENDPOINT, json=data, headers=headers, timeout=100)
+        chat_review = response.json()['message']['content']
+        debug(chat_review)
+        return f"*MistralAI review for {filename}:*\n" f"{chat_review}"
+    except Exception as e:
+        info('Failed to review file "%s": %s', filename, e)
 
 
 def main():
@@ -135,21 +125,21 @@ def main():
         "--github_pr_id", default=None, type=int, help="Github PR ID to review"
     )
     parser.add_argument(
-        "--openai_model",
-        default="gpt-3.5-turbo",
-        help="GPT-3 model to use. Options: gpt-3.5-turbo, text-davinci-002, "
+        "--ai_model",
+        default=None,
+        help="AI model to use. Options: mistral, gpt-3.5-turbo,"
         "text-babbage-001, text-curie-001, text-ada-001. Recommended: gpt-3.5-turbo",
     )
     parser.add_argument(
-        "--openai_temperature",
+        "--ai_temperature",
         default=0.5,
         type=float,
         help="Sampling temperature to use, a float [0, 1]. Higher values "
         "mean the model will take more risks. Recommended: 0.5",
     )
     parser.add_argument(
-        "--openai_max_tokens",
-        default=2048,
+        "--ai_max_tokens",
+        default=4096,
         type=int,
         help="The maximum number of tokens to generate in the completion.",
     )
@@ -188,9 +178,9 @@ def main():
         body = review(
             filename,
             content,
-            args.openai_model,
-            args.openai_temperature,
-            args.openai_max_tokens,
+            args.ai_model if args.ai_model else os.getenv("AI_MODEL"),
+            args.ai_temperature,
+            args.ai_max_tokens,
         )
         if body != "":
             debug(f"attaching comment body to review:\n{body}")
