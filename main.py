@@ -8,12 +8,18 @@ import openai
 from github import Github, PullRequest, Commit
 from dotenv import load_dotenv
 import requests
+from nltk.tokenize import word_tokenize
 
 load_dotenv()
 
 OPENAI_BACKOFF_SECONDS = 20  # 3 requests per minute
 OPENAI_MAX_RETRIES = 3
 OLLAMA_API_ENDPOINT = os.getenv("OLLAMA_URL")
+
+messages = [{
+    "role": "system",
+    "content": "You're a helpful AI Code Reviewer who is reviewing Capstone Projects for Masters' Students", 
+}]
 
 def code_type(filename: str) -> str:
     extension = filename.split(".")[-1].lower()
@@ -105,12 +111,20 @@ def review(
 
 def review_with_ollama(filename: str, content: str, model: str, temperature: float, max_tokens: int) -> str:
     try:
+        messages.append({"role": "user", "content": prompt(filename, content)})
+        concatenated_messages = "".join([message["content"] for message in messages])
+        # Reset messages if we exceed max tokens
+        print(f"{filename}, Token length: " + str(get_token_length_in_words(concatenated_messages)))
+        if(get_token_length_in_words(concatenated_messages) > max_tokens):
+            print(f'Resetting messages as tokens are greater than max tokens at {filename}')
+            messages = [{
+                "role": "system",
+                "content": "You're a helpful AI Code Reviewer who is reviewing Capstone Projects for Masters' Students", 
+            }]
+            messages.append({"role": "user", "content": prompt(filename, content)})
         data = {
             "model": model,
-            "messages": [{
-                "role": "user",
-                "content": prompt(filename, content),
-            }],
+            "messages": messages,
             "temperature": temperature,
             "max_tokens": max_tokens,
             "stream": False
@@ -123,7 +137,11 @@ def review_with_ollama(filename: str, content: str, model: str, temperature: flo
         # print('\n\n\n')
         return f"{model.capitalize()} review for {filename}:*\n" f"{chat_review}"
     except Exception as e:
-        info('Failed to review file "%s": %s', filename, e)
+        print(f'Failed to review file {filename}: {e}')
+
+def get_token_length_in_words(text: str) -> int:
+    tokens = word_tokenize(text)
+    return len(tokens)
 
 def review_with_openai(
     filename: str, content: str, model: str, temperature: float, max_tokens: int) -> str:
@@ -180,7 +198,7 @@ def main():
     )
     parser.add_argument(
         "--ai_max_tokens",
-        default=4096,
+        default=16384,
         type=int,
         help="The maximum number of tokens to generate in the completion.",
     )
