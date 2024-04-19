@@ -17,7 +17,6 @@ API_ENDPOINT = os.getenv("OLLAMA_URL")
 
 def code_type(filename: str) -> str:
     extension = filename.split(".")[-1].lower()
-    print(extension)
     if "js" in extension:
         return "JavaScript"
     elif "ts" in extension:

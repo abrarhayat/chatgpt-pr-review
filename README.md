@@ -45,3 +45,14 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           github_pr_id: ${{ github.event.number }}
 ```
+
+### Running Locally
+To run the code review action locally, 
+
+1. Make sure to include all the properties in the .env file. Look at the [.env.example](.env.example) for an example.
+
+2. After the .env file is created, run the following command:
+```bash
+python -m pip install -r requirements.txt
+python main.py
+```
