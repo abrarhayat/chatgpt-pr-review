@@ -13,7 +13,7 @@ load_dotenv()
 
 OPENAI_BACKOFF_SECONDS = 20  # 3 requests per minute
 OPENAI_MAX_RETRIES = 3
-API_ENDPOINT = os.getenv("OLLAMA_URL")
+OLLAMA_API_ENDPOINT = os.getenv("OLLAMA_URL")
 
 def code_type(filename: str) -> str:
     extension = filename.split(".")[-1].lower()
@@ -23,8 +23,10 @@ def code_type(filename: str) -> str:
         return "TypeScript"
     elif "java" in extension:
         return "Java"
-    else:
+    elif "py" in extension:
         return "Python"
+    else:
+        return extension.replace(".", "").upper()
 
 
 def prompt(filename: str, contents: str) -> str:
@@ -108,7 +110,7 @@ def review(
             "stream": False
         }
         headers = {"Content-Type": "application/json"}
-        response = requests.post(API_ENDPOINT, json=data, headers=headers, timeout=100)
+        response = requests.post(OLLAMA_API_ENDPOINT, json=data, headers=headers, timeout=100)
         chat_review = response.json()['message']['content']
         debug(chat_review)
         return f"*MistralAI review for {filename}:*\n" f"{chat_review}"
