@@ -7,23 +7,25 @@ from argparse import ArgumentParser
 from re import search
 import openai
 from github import Github, PullRequest, Commit
+from dotenv import load_dotenv
+
+load_dotenv()
 
 OPENAI_BACKOFF_SECONDS = 20  # 3 requests per minute
 OPENAI_MAX_RETRIES = 3
 
 
-def code_type(filename: str) -> str | None:
-    match = search(r"^.*\.([^.]*)$", filename)
-    if match:
-        match match.group(1):
-            case "js":
-                return "JavaScript"
-            case "ts":
-                return "TypeScript"
-            case "java":
-                return "Java"
-            case "py":
-                return "Python"
+def code_type(filename: str) -> str:
+    extension = filename.split(".")[-1].lower()
+    print(extension)
+    if "js" in extension:
+        return "JavaScript"
+    elif "ts" in extension:
+        return "TypeScript"
+    elif "java" in extension:
+        return "Java"
+    else:
+        return "Python"
 
 
 def prompt(filename: str, contents: str) -> str:
@@ -127,10 +129,10 @@ def review(
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument("--openai_api_key", required=True, help="OpenAI API Key")
-    parser.add_argument("--github_token", required=True, help="Github Access Token")
+    parser.add_argument("--openai_api_key", default=None, help="OpenAI API Key")
+    parser.add_argument("--github_token", default=None, help="Github Access Token")
     parser.add_argument(
-        "--github_pr_id", required=True, type=int, help="Github PR ID to review"
+        "--github_pr_id", default=None, type=int, help="Github PR ID to review"
     )
     parser.add_argument(
         "--openai_model",
@@ -153,6 +155,7 @@ def main():
     )
     parser.add_argument(
         "--files",
+        default="*",
         help="Comma separated list of UNIX file patterns to target for review",
     )
     parser.add_argument(
@@ -166,11 +169,11 @@ def main():
 
     basicConfig(encoding="utf-8", level=getLevelName(args.logging.upper()))
     file_patterns = args.files.split(",")
-    openai.api_key = args.openai_api_key
-    g = Github(args.github_token)
+    openai.api_key = args.openai_api_key if args.openai_api_key else os.getenv("OPENAI_API_KEY")
+    g = Github(args.github_token if args.github_token else os.getenv("GITHUB_TOKEN"))
 
     repo = g.get_repo(os.getenv("GITHUB_REPOSITORY"))
-    pull = repo.get_pull(args.github_pr_id)
+    pull = repo.get_pull(args.github_pr_id if args.github_pr_id else int(os.getenv("GITHUB_PR_ID")))
     comments = []
     files = files_for_review(pull, file_patterns)
     info(f"files for review: {files}")
