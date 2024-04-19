@@ -111,9 +111,11 @@ def review(
         }
         headers = {"Content-Type": "application/json"}
         response = requests.post(OLLAMA_API_ENDPOINT, json=data, headers=headers, timeout=100)
+        # print(f"Response for {filename}: \n")
         chat_review = response.json()['message']['content']
-        debug(chat_review)
-        return f"*MistralAI review for {filename}:*\n" f"{chat_review}"
+        # print(chat_review)
+        # print('\n\n\n')
+        return f"{model.capitalize()} review for {filename}:*\n" f"{chat_review}"
     except Exception as e:
         info('Failed to review file "%s": %s', filename, e)
 
