@@ -235,8 +235,9 @@ def main():
             )
 
     if len(comments) > 0:
+        model = args.ai_model if args.ai_model else os.getenv("AI_MODEL")
         pull.create_review(
-            body="**ChatGPT code review**", event="COMMENT", comments=comments
+            body=f"**{model} code review**", event="COMMENT", comments=comments
         )
 
 
