@@ -9,6 +9,7 @@ from github import Github, PullRequest, Commit
 from dotenv import load_dotenv
 import requests
 from nltk.tokenize import word_tokenize
+import tiktoken
 
 load_dotenv()
 
@@ -16,10 +17,12 @@ OPENAI_BACKOFF_SECONDS = 20  # 3 requests per minute
 OPENAI_MAX_RETRIES = 3
 OLLAMA_API_ENDPOINT = os.getenv("OLLAMA_URL")
 
-messages = [{
+AI_SYSTEM_MESSAGE = {
     "role": "system",
     "content": "You're a helpful AI Code Reviewer who is reviewing Capstone Projects for Masters' Students", 
-}]
+}
+
+messages = [AI_SYSTEM_MESSAGE]
 
 def code_type(filename: str) -> str:
     extension = filename.split(".")[-1].lower()
@@ -112,16 +115,8 @@ def review(
 def review_with_ollama(filename: str, content: str, model: str, temperature: float, max_tokens: int) -> str:
     try:
         messages.append({"role": "user", "content": prompt(filename, content)})
-        concatenated_messages = "".join([message["content"] for message in messages])
         # Reset messages if we exceed max tokens
-        print(f"{filename}, Token length: " + str(get_token_length_in_words(concatenated_messages)))
-        if(get_token_length_in_words(concatenated_messages) > max_tokens):
-            print(f'Resetting messages as tokens are greater than max tokens at {filename}')
-            messages = [{
-                "role": "system",
-                "content": "You're a helpful AI Code Reviewer who is reviewing Capstone Projects for Masters' Students", 
-            }]
-            messages.append({"role": "user", "content": prompt(filename, content)})
+        reset_messages_if_exceeds_max_tokens(filename, content, model, max_tokens)
         data = {
             "model": model,
             "messages": messages,
@@ -139,9 +134,57 @@ def review_with_ollama(filename: str, content: str, model: str, temperature: flo
     except Exception as e:
         print(f'Failed to review file {filename}: {e}')
 
-def get_token_length_in_words(text: str) -> int:
-    tokens = word_tokenize(text)
-    return len(tokens)
+def review_with_openai(
+    filename: str, content: str, model: str, temperature: float, max_tokens: int) -> str:
+    x = 0
+    global messages
+    while True:
+        try:
+            messages.append({"role": "user", "content": prompt(filename, content)})
+            # Reset messages if we exceed max tokens
+            reset_messages_if_exceeds_max_tokens(filename, content, model, max_tokens)
+            chat_review = (
+                openai.ChatCompletion.create(
+                    model=model,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    messages=messages,
+                )
+                .choices[0]
+                .message.content
+            )
+            # print(chat_review)
+            # print('\n\n\n')
+            messages.append({"role": "assistant", "content": chat_review})
+            return f"*ChatGPT review for {filename}:*\n" f"{chat_review}"
+        except openai.error.RateLimitError:
+            if x < OPENAI_MAX_RETRIES:
+                info("OpenAI rate limit hit, backing off and trying again...")
+                sleep(OPENAI_BACKOFF_SECONDS)
+                x+=1
+            else:
+                raise Exception(
+                    f"finally failing request to OpenAI platform for code review, max retries {OPENAI_MAX_RETRIES} exceeded"
+                )
+            
+def reset_messages_if_exceeds_max_tokens(filename: str, content: str, model: str, max_tokens: int):
+    global messages
+    concatenated_messages = "".join([message["content"] for message in messages])
+    current_token_length = get_token_length_in_words(concatenated_messages, model)
+    print(f"{filename}, Token length: " + str(current_token_length))
+    if(current_token_length > max_tokens):
+        print(f'Resetting messages as tokens are greater than max tokens at {filename}')
+        messages = [AI_SYSTEM_MESSAGE]
+        messages.append({"role": "user", "content": prompt(filename, content)})
+
+
+def get_token_length_in_words(text: str, model: str) -> int:
+    if("gpt" in model.lower()):
+        encoding = tiktoken.encoding_for_model(model)
+        return len(encoding.encode(text))
+    else:
+        tokens = word_tokenize(text)
+        return len(tokens)
 
 def review_with_openai(
     filename: str, content: str, model: str, temperature: float, max_tokens: int) -> str:
@@ -239,7 +282,7 @@ def main():
             content,
             args.ai_model if args.ai_model else os.getenv("AI_MODEL"),
             args.ai_temperature,
-            args.ai_max_tokens,
+            int(os.getenv("AI_MAX_TOKENS")) if os.getenv("AI_MAX_TOKENS") else args.ai_max_tokens,
         )
         if body != "":
             debug(f"attaching comment body to review:\n{body}")
