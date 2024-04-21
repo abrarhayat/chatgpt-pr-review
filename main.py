@@ -3,7 +3,7 @@ from logging import info, basicConfig, getLevelName, debug
 import os
 from typing import Iterable, List, Tuple
 from argparse import ArgumentParser
-from re import search
+from time import sleep
 import openai
 from github import Github, PullRequest, Commit
 from dotenv import load_dotenv
@@ -98,6 +98,12 @@ def files_for_review(
 def review(
     filename: str, content: str, model: str, temperature: float, max_tokens: int
 ) -> str:
+    if "gpt" in model.lower():
+        return review_with_openai(filename, content, model, temperature, max_tokens)
+    else:
+        return review_with_ollama(filename, content, model, temperature, max_tokens)
+
+def review_with_ollama(filename: str, content: str, model: str, temperature: float, max_tokens: int) -> str:
     try:
         data = {
             "model": model,
@@ -111,14 +117,46 @@ def review(
         }
         headers = {"Content-Type": "application/json"}
         response = requests.post(OLLAMA_API_ENDPOINT, json=data, headers=headers, timeout=100)
-        # print(f"Response for {filename}: \n")
         chat_review = response.json()['message']['content']
+        # print(f"Response for {filename}: \n")
         # print(chat_review)
         # print('\n\n\n')
         return f"{model.capitalize()} review for {filename}:*\n" f"{chat_review}"
     except Exception as e:
         info('Failed to review file "%s": %s', filename, e)
 
+def review_with_openai(
+    filename: str, content: str, model: str, temperature: float, max_tokens: int) -> str:
+    x = 0
+    while True:
+        try:
+            chat_review = (
+                openai.ChatCompletion.create(
+                    model=model,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": prompt(filename, content),
+                        }
+                    ],
+                )
+                .choices[0]
+                .message.content
+            )
+            # print(chat_review)
+            # print('\n\n\n')
+            return f"*ChatGPT review for {filename}:*\n" f"{chat_review}"
+        except openai.error.RateLimitError:
+            if x < OPENAI_MAX_RETRIES:
+                info("OpenAI rate limit hit, backing off and trying again...")
+                sleep(OPENAI_BACKOFF_SECONDS)
+                x+=1
+            else:
+                raise Exception(
+                    f"finally failing request to OpenAI platform for code review, max retries {OPENAI_MAX_RETRIES} exceeded"
+                )
 
 def main():
     parser = ArgumentParser()
