@@ -147,7 +147,7 @@ def review_with_openai(
             )
             # print(chat_review)
             # print('\n\n\n')
-            return f"*ChatGPT review for {filename}:*\n" f"{chat_review}"
+            return f"{model.capitalize()} review for {filename}:*\n" f"{chat_review}"
         except openai.error.RateLimitError:
             if x < OPENAI_MAX_RETRIES:
                 info("OpenAI rate limit hit, backing off and trying again...")
