@@ -156,7 +156,7 @@ def review_with_openai(
             # print(chat_review)
             # print('\n\n\n')
             messages.append({"role": "assistant", "content": chat_review})
-            return f"*ChatGPT review for {filename}:*\n" f"{chat_review}"
+            return f"{model.capitalize()} review for {filename}:*\n" f"{chat_review}"
         except openai.error.RateLimitError:
             if x < OPENAI_MAX_RETRIES:
                 info("OpenAI rate limit hit, backing off and trying again...")
@@ -185,39 +185,6 @@ def get_token_length_in_words(text: str, model: str) -> int:
     else:
         tokens = word_tokenize(text)
         return len(tokens)
-
-def review_with_openai(
-    filename: str, content: str, model: str, temperature: float, max_tokens: int) -> str:
-    x = 0
-    while True:
-        try:
-            chat_review = (
-                openai.ChatCompletion.create(
-                    model=model,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": prompt(filename, content),
-                        }
-                    ],
-                )
-                .choices[0]
-                .message.content
-            )
-            # print(chat_review)
-            # print('\n\n\n')
-            return f"{model.capitalize()} review for {filename}:*\n" f"{chat_review}"
-        except openai.error.RateLimitError:
-            if x < OPENAI_MAX_RETRIES:
-                info("OpenAI rate limit hit, backing off and trying again...")
-                sleep(OPENAI_BACKOFF_SECONDS)
-                x+=1
-            else:
-                raise Exception(
-                    f"finally failing request to OpenAI platform for code review, max retries {OPENAI_MAX_RETRIES} exceeded"
-                )
 
 def main():
     parser = ArgumentParser()
