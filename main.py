@@ -10,6 +10,9 @@ from dotenv import load_dotenv
 import requests
 from nltk.tokenize import word_tokenize
 import tiktoken
+from langchain_community.vectorstores import Chroma
+from langchain_community.embeddings import OllamaEmbeddings
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 load_dotenv()
 
@@ -45,8 +48,10 @@ def prompt(filename: str, contents: str) -> str:
         code = f"{type} {code}"
 
     return (
-        f"Please evaluate the {code} below.\n"
-        "Use the following checklist to guide your analysis:\n"
+        f"Please perform a code review on the {code} specifically named {filename} below inside the triple backticks.\n"
+        f"File contents:\n```\n{contents}\n```"
+        "Use must use the following checklist inside the triple backticks below to guide your analysis and review accordingly:\n"
+        "```"
         "   1. Documentation Defects:\n"
         "       a. Naming: Assess the quality of software element names.\n"
         "       b. Comment: Analyze the quality and accuracy of code comments.\n"
@@ -70,7 +75,6 @@ def prompt(filename: str, contents: str) -> str:
         "       a. Compute: Identify incorrect logic during system execution.\n"
         "       b. Performance: Evaluate the efficiency of the algorithm used.\n"
         "Provide your feedback in a numbered list for each category. At the end of your answer, summarize the recommended changes to improve the quality of the code provided.\n"
-        f"```\n{contents}\n```"
     )
 
 
@@ -114,7 +118,9 @@ def review(
 
 def review_with_ollama(filename: str, content: str, model: str, temperature: float, max_tokens: int) -> str:
     try:
-        messages.append({"role": "user", "content": prompt(filename, content)})
+        context = get_relevant_rag_context(prompt(filename, content), embeddings = OllamaEmbeddings(model=model))
+        messages.append({"role": "user", "content": f"{prompt(filename, content)},\n"
+                         + f"Furthermore, use the following context inside the triple backticks to answer the above question:\nContext: '''\n{context}\n'''"})
         # Reset messages if we exceed max tokens
         reset_messages_if_exceeds_max_tokens(filename, content, model, max_tokens)
         data = {
@@ -127,9 +133,9 @@ def review_with_ollama(filename: str, content: str, model: str, temperature: flo
         headers = {"Content-Type": "application/json"}
         response = requests.post(OLLAMA_API_ENDPOINT, json=data, headers=headers, timeout=100)
         chat_review = response.json()['message']['content']
-        # print(f"Response for {filename}: \n")
-        # print(chat_review)
-        # print('\n\n\n')
+        print(f"Response for {filename}: \n")
+        print(chat_review)
+        print('\n\n\n')
         return f"{model.capitalize()} review for {filename}:*\n" f"{chat_review}"
     except Exception as e:
         print(f'Failed to review file {filename}: {e}')
@@ -186,6 +192,21 @@ def get_token_length_in_words(text: str, model: str) -> int:
         tokens = word_tokenize(text)
         return len(tokens)
 
+# Retrieve relevant data from vector store
+def loadDocsFromVectorStore(query, embeddings):
+    db3 = Chroma(persist_directory="./chroma_db", embedding_function=embeddings)
+    docs =  db3.similarity_search(query)
+    return docs
+
+def get_split_files(file_contents):
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    for file_content in file_contents:
+        splits = splits + text_splitter.split_text(file_content)
+def combine_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
+def get_relevant_rag_context(question, embeddings):
+    retrieved_docs = loadDocsFromVectorStore(question, embeddings)
+    return combine_docs(retrieved_docs)
 def main():
     parser = ArgumentParser()
     parser.add_argument("--openai_api_key", default=None, help="OpenAI API Key")
@@ -264,10 +285,17 @@ def main():
 
     if len(comments) > 0:
         model = args.ai_model if args.ai_model else os.getenv("AI_MODEL")
-        pull.create_review(
-            body=f"**{model} code review**", event="COMMENT", comments=comments
-        )
-
-
+        try:
+            pull.create_review(
+                body=f"**{model} code review**", event="COMMENT", comments=comments
+            )
+        except Exception as e:
+            print(e)
+            # Write comments to a new .md file
+            filename = f"{model}-code-review.md"
+            with open(filename, "w") as f:
+                for comment in comments:
+                    print("comment", comment)
+                    f.write(f"---\n{comment['body']}\n---\n")
 if __name__ == "__main__":
     main()
