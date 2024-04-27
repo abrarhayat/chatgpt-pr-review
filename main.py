@@ -27,6 +27,8 @@ AI_SYSTEM_MESSAGE = {
 
 messages = [AI_SYSTEM_MESSAGE]
 
+vectorstore = None
+
 def code_type(filename: str) -> str:
     extension = filename.split(".")[-1].lower()
     if "js" in extension:
@@ -109,16 +111,18 @@ def files_for_review(
 
 
 def review(
-    filename: str, content: str, model: str, temperature: float, max_tokens: int
+    filename: str, content: str, model: str, temperature: float, max_tokens: int, file_contents: List[str]
 ) -> str:
     if "gpt" in model.lower():
         return review_with_openai(filename, content, model, temperature, max_tokens)
     else:
-        return review_with_ollama(filename, content, model, temperature, max_tokens)
+        global vectorstore
+        vectorstore = Chroma.from_texts(texts=get_split_text(file_contents), embedding=OllamaEmbeddings(model=model)) if vectorstore is None else vectorstore 
+        return review_with_ollama(filename, content, model, temperature, max_tokens, vectorstore)
 
-def review_with_ollama(filename: str, content: str, model: str, temperature: float, max_tokens: int) -> str:
+def review_with_ollama(filename: str, content: str, model: str, temperature: float, max_tokens: int, vectorstore: Chroma) -> str:
     try:
-        context = get_relevant_rag_context(prompt(filename, content), embeddings = OllamaEmbeddings(model=model))
+        context = get_relevant_rag_context(prompt(filename, content), vectorstore)
         messages.append({"role": "user", "content": f"{prompt(filename, content)},\n"
                          + f"Furthermore, use the following context inside the triple backticks to answer the above question:\nContext: '''\n{context}\n'''"})
         # Reset messages if we exceed max tokens
@@ -198,14 +202,17 @@ def loadDocsFromVectorStore(query, embeddings):
     docs =  db3.similarity_search(query)
     return docs
 
-def get_split_files(file_contents):
+def get_split_text(file_contents):
+    splits = []
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     for file_content in file_contents:
         splits = splits + text_splitter.split_text(file_content)
+    return splits
 def combine_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
-def get_relevant_rag_context(question, embeddings):
-    retrieved_docs = loadDocsFromVectorStore(question, embeddings)
+def get_relevant_rag_context(question, vectorstore):
+    retriever = vectorstore.as_retriever()
+    retrieved_docs = retriever.invoke(question)
     return combine_docs(retrieved_docs)
 def main():
     parser = ArgumentParser()
@@ -256,6 +263,7 @@ def main():
     pull = repo.get_pull(args.github_pr_id if args.github_pr_id else int(os.getenv("GITHUB_PR_ID")))
     comments = []
     files = files_for_review(pull, file_patterns)
+    file_contents = [repo.get_contents(filename, commit.sha).decoded_content.decode("utf8") for filename, commit in files]
     info(f"files for review: {files}")
     for filename, commit in files:
         debug(f"starting review for file {filename} and commit sha {commit.sha}")
@@ -271,6 +279,7 @@ def main():
             args.ai_model if args.ai_model else os.getenv("AI_MODEL"),
             args.ai_temperature,
             int(os.getenv("AI_MAX_TOKENS")) if os.getenv("AI_MAX_TOKENS") else args.ai_max_tokens,
+            file_contents
         )
         if body != "":
             debug(f"attaching comment body to review:\n{body}")
