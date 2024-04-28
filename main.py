@@ -207,7 +207,7 @@ def loadDocsFromVectorStore(query, embeddings):
 
 def get_split_text(file_contents):
     splits = []
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=250, chunk_overlap=200)
     for file_content in file_contents:
         splits = splits + text_splitter.split_text(file_content)
     return splits
