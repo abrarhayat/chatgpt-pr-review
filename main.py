@@ -304,7 +304,7 @@ def main():
         except Exception as e:
             print(e)
             # Write comments to a new .md file
-            filename = f"{model}-code-review.md"
+            filename = f"local/{model}-code-review.md"
             with open(filename, "w") as f:
                 for comment in comments:
                     print("comment", comment)
