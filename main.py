@@ -123,6 +123,9 @@ def review(
 def review_with_ollama(filename: str, content: str, model: str, temperature: float, max_tokens: int, vectorstore: Chroma) -> str:
     try:
         context = get_relevant_rag_context(prompt(filename, content), vectorstore)
+        # print(f"Context for {filename}: \n")
+        # print('Content length: ', len(context), 'Context Content:', context)
+        # print('\n\n\n')
         messages.append({"role": "user", "content": f"{prompt(filename, content)},\n"
                          + f"Furthermore, use the following context inside the triple backticks to answer the above question:\nContext: '''\n{context}\n'''"})
         # Reset messages if we exceed max tokens
@@ -137,9 +140,9 @@ def review_with_ollama(filename: str, content: str, model: str, temperature: flo
         headers = {"Content-Type": "application/json"}
         response = requests.post(OLLAMA_API_ENDPOINT, json=data, headers=headers, timeout=100)
         chat_review = response.json()['message']['content']
-        print(f"Response for {filename}: \n")
-        print(chat_review)
-        print('\n\n\n')
+        # print(f"Response for {filename}: \n")
+        # print(chat_review)
+        # print('\n\n\n')
         return f"{model.capitalize()} review for {filename}:*\n" f"{chat_review}"
     except Exception as e:
         print(f'Failed to review file {filename}: {e}')
