@@ -47,7 +47,7 @@ def prompt(filename: str, contents: str) -> str:
         code = f"{type} {code}"
 
     return (
-        f"Please evaluate the {code} below.\n"
+        f"Please evaluate the {code} below inside the triple backticks.\n"
         "Use the following checklist to guide your analysis:\n"
         "   1. Documentation Defects:\n"
         "       a. Naming: Assess the quality of software element names.\n"
@@ -73,6 +73,7 @@ def prompt(filename: str, contents: str) -> str:
         "       b. Performance: Evaluate the efficiency of the algorithm used.\n"
         "Provide your feedback in a numbered list for each category. At the end of your answer, summarize the recommended changes to improve the quality of the code provided.\n"
         f"```\n{contents}\n```"
+        "Please provide your feedback within 600 words."
     )
 
 
