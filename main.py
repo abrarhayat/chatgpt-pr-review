@@ -132,6 +132,7 @@ def review_with_ollama(filename: str, content: str, model: str, temperature: flo
         # print(f"Response for {filename}: \n")
         # print(chat_review)
         # print('\n\n\n')
+        messages.append({"role": "assistant", "content": chat_review})
         return f"{model.capitalize()} review for {filename}:*\n" f"{chat_review}"
     except Exception as e:
         print(f'Failed to review file {filename}: {e}')
