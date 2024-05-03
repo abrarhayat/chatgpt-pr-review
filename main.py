@@ -5,6 +5,7 @@ from typing import Iterable, List, Tuple
 from argparse import ArgumentParser
 from time import sleep
 import openai
+from openai import OpenAI
 from github import Github, PullRequest, Commit
 from dotenv import load_dotenv
 import requests
@@ -14,7 +15,7 @@ load_dotenv()
 OPENAI_BACKOFF_SECONDS = 20  # 3 requests per minute
 OPENAI_MAX_RETRIES = 3
 OLLAMA_API_ENDPOINT = os.getenv("OLLAMA_URL")
-
+openai_client = os.getenv("OPENAI_API_KEY")
 def code_type(filename: str) -> str:
     extension = filename.split(".")[-1].lower()
     if "js" in extension:
@@ -128,10 +129,11 @@ def review_with_ollama(filename: str, content: str, model: str, temperature: flo
 def review_with_openai(
     filename: str, content: str, model: str, temperature: float, max_tokens: int) -> str:
     x = 0
+    global openai_client
     while True:
         try:
             chat_review = (
-                openai.ChatCompletion.create(
+                openai_client.chat.completions.create(
                     model=model,
                     temperature=temperature,
                     max_tokens=max_tokens,
@@ -148,7 +150,7 @@ def review_with_openai(
             # print(chat_review)
             # print('\n\n\n')
             return f"{model.capitalize()} review for {filename}:*\n" f"{chat_review}"
-        except openai.error.RateLimitError:
+        except openai.RateLimitError:
             if x < OPENAI_MAX_RETRIES:
                 info("OpenAI rate limit hit, backing off and trying again...")
                 sleep(OPENAI_BACKOFF_SECONDS)
@@ -199,6 +201,8 @@ def main():
     args = parser.parse_args()
 
     basicConfig(encoding="utf-8", level=getLevelName(args.logging.upper()))
+    global openai_client
+    openai_client = OpenAI(api_key=args.openai_api_key if args.openai_api_key else os.getenv("OPENAI_API_KEY"))
     file_patterns = args.files.split(",")
     openai.api_key = args.openai_api_key if args.openai_api_key else os.getenv("OPENAI_API_KEY")
     g = Github(args.github_token if args.github_token else os.getenv("GITHUB_TOKEN"))
