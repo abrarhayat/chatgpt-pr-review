@@ -141,26 +141,25 @@ def review_with_ollama(filename: str, content: str, model: str, temperature: flo
 def review_with_openai(
     filename: str, content: str, model: str, temperature: float, max_tokens: int) -> str:
     x = 0
-    global openai_client
+    global messages, openai_client
     while True:
         try:
+            messages.append({"role": "user", "content": prompt(filename, content)})
+            # Reset messages if we exceed max tokens
+            reset_messages_if_exceeds_max_tokens(filename, content, model, max_tokens)
             chat_review = (
                 openai_client.chat.completions.create(
                     model=model,
                     temperature=temperature,
                     max_tokens=max_tokens,
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": prompt(filename, content),
-                        }
-                    ],
+                    messages=messages,
                 )
                 .choices[0]
                 .message.content
             )
             # print(chat_review)
             # print('\n\n\n')
+            messages.append({"role": "assistant", "content": chat_review})
             return f"{model.capitalize()} review for {filename}:*\n" f"{chat_review}"
         except openai.RateLimitError:
             if x < OPENAI_MAX_RETRIES:
@@ -170,7 +169,7 @@ def review_with_openai(
             else:
                 raise Exception(
                     f"finally failing request to OpenAI platform for code review, max retries {OPENAI_MAX_RETRIES} exceeded"
-                )
+                )            
             
 def reset_messages_if_exceeds_max_tokens(filename: str, content: str, model: str, max_tokens: int):
     global messages
