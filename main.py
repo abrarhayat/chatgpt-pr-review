@@ -33,6 +33,8 @@ messages = [AI_SYSTEM_MESSAGE]
 
 vectorstore = None
 
+project_readme_content = ""
+
 def code_type(filename: str) -> str:
     extension = filename.split(".")[-1].lower()
     if "js" in extension:
@@ -204,6 +206,20 @@ def get_token_length_in_words(text: str, model: str) -> int:
     else:
         tokens = word_tokenize(text)
         return len(tokens)
+    
+def get_project_readme(repo: any) -> str:
+    # Specify the path to the README file
+    readme_path = "README.md"
+    try:
+        #Try to get the contents of the README file
+        readme_content = repo.get_contents(readme_path)
+        # Decode the content from base64
+        readme_text = readme_content.decoded_content.decode("utf-8")
+        # return the content
+        return readme_text   
+    except Exception as e:
+        print(f"Error fetching README: {e}")
+        return ""
 
 # Retrieve relevant data from vector store
 def loadDocsFromVectorStore(query, embeddings):
@@ -214,6 +230,9 @@ def loadDocsFromVectorStore(query, embeddings):
 def get_split_text(file_contents):
     splits = []
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=250, chunk_overlap=200)
+    global project_readme_content
+    if(project_readme_content != ""):
+        file_contents.append(project_readme_content)
     for file_content in file_contents:
         splits = splits + text_splitter.split_text(file_content)
     return splits
@@ -222,6 +241,8 @@ def combine_docs(docs):
 def get_relevant_rag_context(question, vectorstore):
     retriever = vectorstore.as_retriever()
     retrieved_docs = retriever.invoke(question)
+    print(f"Retrieved {len(retrieved_docs)} docs from vectorstore")
+    # print('\n' + combine_docs(retrieved_docs))
     return combine_docs(retrieved_docs)
 def main():
     parser = ArgumentParser()
@@ -265,7 +286,7 @@ def main():
 
     basicConfig(encoding="utf-8", level=getLevelName(args.logging.upper()))
     file_patterns = args.files.split(",")
-    global openai_client, open_ai_embeddings
+    global openai_client, open_ai_embeddings, project_readme_content
     openai_client = OpenAI(api_key=args.openai_api_key if args.openai_api_key else os.getenv("OPENAI_API_KEY"))
     open_ai_embeddings = OpenAIEmbeddings(openai_api_key=args.openai_api_key if args.openai_api_key else os.getenv("OPENAI_API_KEY"))
     g = Github(args.github_token if args.github_token else os.getenv("GITHUB_TOKEN"))
@@ -275,6 +296,7 @@ def main():
     comments = []
     files = files_for_review(pull, file_patterns)
     file_contents = [repo.get_contents(filename, commit.sha).decoded_content.decode("utf8") for filename, commit in files]
+    project_readme_content = get_project_readme(repo)
     info(f"files for review: {files}")
     for filename, commit in files:
         debug(f"starting review for file {filename} and commit sha {commit.sha}")
