@@ -5,6 +5,7 @@ from typing import Iterable, List, Tuple
 from argparse import ArgumentParser
 from time import sleep
 import openai
+from openai import OpenAI
 from github import Github, PullRequest, Commit
 from dotenv import load_dotenv
 import requests
@@ -12,6 +13,7 @@ from nltk.tokenize import word_tokenize
 import tiktoken
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import OllamaEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 load_dotenv()
@@ -19,6 +21,8 @@ load_dotenv()
 OPENAI_BACKOFF_SECONDS = 20  # 3 requests per minute
 OPENAI_MAX_RETRIES = 3
 OLLAMA_API_ENDPOINT = os.getenv("OLLAMA_URL")
+openai_client = os.getenv("OPENAI_API_KEY")
+open_ai_embeddings = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))
 
 AI_SYSTEM_MESSAGE = {
     "role": "system",
@@ -113,10 +117,12 @@ def files_for_review(
 def review(
     filename: str, content: str, model: str, temperature: float, max_tokens: int, file_contents: List[str]
 ) -> str:
+    global vectorstore
     if "gpt" in model.lower():
-        return review_with_openai(filename, content, model, temperature, max_tokens)
+        global open_ai_embeddings
+        vectorstore = Chroma.from_texts(texts=get_split_text(file_contents), embedding=open_ai_embeddings) if vectorstore is None else vectorstore
+        return review_with_openai(filename, content, model, temperature, max_tokens, vectorstore)
     else:
-        global vectorstore
         vectorstore = Chroma.from_texts(texts=get_split_text(file_contents), embedding=OllamaEmbeddings(model=model)) if vectorstore is None else vectorstore 
         return review_with_ollama(filename, content, model, temperature, max_tokens, vectorstore)
 
@@ -148,21 +154,21 @@ def review_with_ollama(filename: str, content: str, model: str, temperature: flo
         print(f'Failed to review file {filename}: {e}')
 
 def review_with_openai(
-    filename: str, content: str, model: str, temperature: float, max_tokens: int) -> str:
+    filename: str, content: str, model: str, temperature: float, max_tokens: int, vectorstore: Chroma) -> str:
     x = 0
-    global messages
+    global messages, openai_client
     while True:
         try:
-            messages.append({"role": "user", "content": prompt(filename, content)})
+            context = get_relevant_rag_context(prompt(filename, content), vectorstore)
+            messages.append({"role": "user", "content": f"{prompt(filename, content)},\n"
+                + f"Furthermore, use the following context inside the triple backticks to answer the above question:\nContext: '''\n{context}\n'''"})
             # Reset messages if we exceed max tokens
             reset_messages_if_exceeds_max_tokens(filename, content, model, max_tokens)
             chat_review = (
-                openai.ChatCompletion.create(
-                    model=model,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                    messages=messages,
-                )
+                openai_client.chat.completions.create(model=model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                messages=messages)
                 .choices[0]
                 .message.content
             )
@@ -170,7 +176,7 @@ def review_with_openai(
             # print('\n\n\n')
             messages.append({"role": "assistant", "content": chat_review})
             return f"{model.capitalize()} review for {filename}:*\n" f"{chat_review}"
-        except openai.error.RateLimitError:
+        except openai.RateLimitError:
             if x < OPENAI_MAX_RETRIES:
                 info("OpenAI rate limit hit, backing off and trying again...")
                 sleep(OPENAI_BACKOFF_SECONDS)
@@ -179,7 +185,7 @@ def review_with_openai(
                 raise Exception(
                     f"finally failing request to OpenAI platform for code review, max retries {OPENAI_MAX_RETRIES} exceeded"
                 )
-            
+
 def reset_messages_if_exceeds_max_tokens(filename: str, content: str, model: str, max_tokens: int):
     global messages
     concatenated_messages = "".join([message["content"] for message in messages])
@@ -259,7 +265,9 @@ def main():
 
     basicConfig(encoding="utf-8", level=getLevelName(args.logging.upper()))
     file_patterns = args.files.split(",")
-    openai.api_key = args.openai_api_key if args.openai_api_key else os.getenv("OPENAI_API_KEY")
+    global openai_client, open_ai_embeddings
+    openai_client = OpenAI(api_key=args.openai_api_key if args.openai_api_key else os.getenv("OPENAI_API_KEY"))
+    open_ai_embeddings = OpenAIEmbeddings(openai_api_key=args.openai_api_key if args.openai_api_key else os.getenv("OPENAI_API_KEY"))
     g = Github(args.github_token if args.github_token else os.getenv("GITHUB_TOKEN"))
 
     repo = g.get_repo(os.getenv("GITHUB_REPOSITORY"))
