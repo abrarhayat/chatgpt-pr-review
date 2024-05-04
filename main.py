@@ -56,7 +56,7 @@ def prompt(filename: str, contents: str) -> str:
         code = f"{type} {code}"
 
     return (
-        f"Please perform a code review on the {code} specifically named {filename} below inside the triple backticks.\n"
+        f"Please perform a code review (keep the feedback within 600 words) on the {code} specifically named {filename} below inside the triple backticks.\n"
         f"File contents:\n```\n{contents}\n```"
         "Use must use the following checklist inside the triple backticks below to guide your analysis and review accordingly:\n"
         "```"
