@@ -56,7 +56,7 @@ def prompt(filename: str, contents: str) -> str:
         code = f"{type} {code}"
 
     return (
-        f"Please perform a code review (keep the feedback within 600 words) on the {code} specifically named {filename} below inside the triple backticks.\n"
+        f"Please perform a code review (keep the feedback within 1500 words) on the {code} specifically named {filename} below inside the triple backticks.\n"
         f"File contents:\n```\n{contents}\n```"
         "Use must use the following checklist inside the triple backticks below to guide your analysis and review accordingly:\n"
         "```"
@@ -141,7 +141,8 @@ def review_with_ollama(filename: str, content: str, model: str, temperature: flo
         reset_messages_if_exceeds_max_tokens(filename, content, model, max_tokens)
         data = {
             "model": model,
-            "messages": messages,
+            "messages": [AI_SYSTEM_MESSAGE, {"role": "user", "content": f"{prompt(filename, content)},\n"
+                         + f"Furthermore, use the following context inside the triple backticks to answer the above question:\nContext: '''\n{context}\n'''"}],
             "temperature": temperature,
             "max_tokens": max_tokens,
             "stream": False
@@ -153,6 +154,7 @@ def review_with_ollama(filename: str, content: str, model: str, temperature: flo
         # print(chat_review)
         # print('\n\n\n')
         messages.append({"role": "assistant", "content": chat_review})
+        vectorstore.add_texts(get_split_text([chat_review], include_readme=False))
         return f"{model.capitalize()} review for {filename}:*\n" f"{chat_review}"
     except Exception as e:
         print(f'Failed to review file {filename}: {e}')
@@ -172,13 +174,15 @@ def review_with_openai(
                 openai_client.chat.completions.create(model=model,
                 temperature=temperature,
                 max_tokens=max_tokens,
-                messages=messages)
+                messages=[AI_SYSTEM_MESSAGE, {"role": "user", "content": f"{prompt(filename, content)},\n"
+                + f"Furthermore, use the following context inside the triple backticks to answer the above question:\nContext: '''\n{context}\n'''"}])
                 .choices[0]
                 .message.content
             )
             # print(chat_review)
             # print('\n\n\n')
             messages.append({"role": "assistant", "content": chat_review})
+            vectorstore.add_texts(get_split_text([chat_review], include_readme=False))
             return f"{model.capitalize()} review for {filename}:*\n" f"{chat_review}"
         except openai.RateLimitError:
             if x < OPENAI_MAX_RETRIES:
@@ -229,11 +233,11 @@ def loadDocsFromVectorStore(query, embeddings):
     docs =  db3.similarity_search(query)
     return docs
 
-def get_split_text(file_contents):
+def get_split_text(file_contents, include_readme=True):
     splits = []
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=250, chunk_overlap=200)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=250, chunk_overlap=40, length_function=len)
     global project_readme_content
-    if(project_readme_content != ""):
+    if(project_readme_content != "" and include_readme):
         file_contents.append(project_readme_content)
     for file_content in file_contents:
         splits = splits + text_splitter.split_text(file_content)
