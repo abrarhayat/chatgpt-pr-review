@@ -307,8 +307,8 @@ def main():
     for filename, commit in files:
         debug(f"starting review for file {filename} and commit sha {commit.sha}")
         content = repo.get_contents(filename, commit.sha).decoded_content.decode("utf8")
-        if len(content) == 0:
-            info(
+        if len(content) == 0 or ".yml" in filename:
+            print(
                 f"skipping file {filename} in commit {commit.sha} because the file is empty"
             )
             continue
